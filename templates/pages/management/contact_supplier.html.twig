@@ -35,7 +35,7 @@
 <div class="mb-3">
     <form method="post" action="{{ 'Contact_Supplier'|itemtype_form_path }}" data-submit-once>
         {{ fields.csrfField() }}
-        <div class="d-flex">
+        <div class="d-flex align-items-end">
             {% if get_class(peer) == 'Contact' %}
                 <input type="hidden" name="contacts_id" value="{{ peer.getID() }}">
                 {{ fields.dropdownField('Supplier', 'suppliers_id', '', __('Add a supplier'), {

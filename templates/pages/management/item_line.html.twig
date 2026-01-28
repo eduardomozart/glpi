@@ -35,7 +35,7 @@
 <div class="mb-3">
     <form method="post" action="{{ 'Item_Line'|itemtype_form_path }}" data-submit-once>
         {{ fields.csrfField() }}
-        <div class="d-flex">
+        <div class="d-flex align-items-end">
             {% if from_line %}
                 <input type="hidden" name="lines_id" value="{{ peer_id }}">
                 {{ fields.dropdownItemsFromItemtypes('items_id', __('Add an item'), {
