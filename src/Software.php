@@ -667,8 +667,11 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $entity_restrict,
             true
         );
-        echo "<div class='btn-group btn-group-sm'>";
+        
+        // Capture the dropdown output
+        ob_start();
         $rand = Dropdown::show('Software', ['condition' => ['WHERE' => $where]]);
+        $dropdown_html = ob_get_clean();
 
         $paramsselsoft = [
             'softwares_id' => '__VALUE__',
@@ -682,8 +685,20 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        echo "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
-        echo "</div>";
+        $ajax_span = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
+        
+        // If dropdown has btn-group, inject the AJAX span inside it
+        if (preg_match('/<div[^>]*class=["\'][^"\']*btn-group[^"\']*["\'][^>]*>(.*)<\/div>\s*$/s', $dropdown_html, $matches)) {
+            // Inject AJAX span before the closing </div>
+            $dropdown_html = preg_replace('/(<\/div>)\s*$/s', $ajax_span . '$1', $dropdown_html);
+            echo $dropdown_html;
+        } else {
+            // No btn-group found, wrap everything in one
+            echo "<div class='btn-group btn-group-sm'>";
+            echo $dropdown_html;
+            echo $ajax_span;
+            echo "</div>";
+        }
 
         return $rand;
     }
@@ -727,8 +742,11 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $softwares_id          = $data["id"];
             $values[$softwares_id] = $data["name"];
         }
-        echo "<div class='btn-group btn-group-sm'>";
+        
+        // Capture the dropdown output
+        ob_start();
         $rand = Dropdown::showFromArray('softwares_id', $values, ['display_emptychoice' => true]);
+        $dropdown_html = ob_get_clean();
 
         $paramsselsoft = ['softwares_id'    => '__VALUE__',
             'entity_restrict' => $entity_restrict,
@@ -742,8 +760,20 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        echo "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
-        echo "</div>";
+        $ajax_span = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
+        
+        // If dropdown has btn-group, inject the AJAX span inside it
+        if (preg_match('/<div[^>]*class=["\'][^"\']*btn-group[^"\']*["\'][^>]*>(.*)<\/div>\s*$/s', $dropdown_html, $matches)) {
+            // Inject AJAX span before the closing </div>
+            $dropdown_html = preg_replace('/(<\/div>)\s*$/s', $ajax_span . '$1', $dropdown_html);
+            echo $dropdown_html;
+        } else {
+            // No btn-group found, wrap everything in one
+            echo "<div class='btn-group btn-group-sm'>";
+            echo $dropdown_html;
+            echo $ajax_span;
+            echo "</div>";
+        }
 
         return $rand;
     }
