@@ -1012,6 +1012,10 @@ class Item_SoftwareVersion extends CommonDBRelation
             echo "<div class='firstbloc'>";
             echo "<form method='post' action='" . htmlescape(Item_SoftwareVersion::getFormURL()) . "'>";
             echo __s('Install a software');
+            echo Html::showToolTip(
+                __s('Link a software version to this item. This allows you to track which software is installed on this asset.'),
+                ['display' => false]
+            );
             echo "<input type='hidden' name='itemtype' value='" . htmlescape($itemtype) . "'>";
             echo "<input type='hidden' name='items_id' value='$items_id'>";
             echo "<div class='d-flex'>";
@@ -1222,6 +1226,10 @@ class Item_SoftwareVersion extends CommonDBRelation
             echo "<div class='firstbloc'>";
             echo "<form method='post' action='" . htmlescape(Item_SoftwareLicense::getFormURL()) . "'>";
             echo __s('Add a licence');
+            echo Html::showToolTip(
+                __s('Associate a software license to this item. Licenses define the usage rights for the software installed on this asset.'),
+                ['display' => false]
+            );
             echo "<input type='hidden' name='itemtype' value='" . htmlescape($itemtype) . "'>";
             echo "<input type='hidden' name='items_id' value='$items_id'>";
             echo "<div class='d-flex'>";
