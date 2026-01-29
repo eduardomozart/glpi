@@ -44,7 +44,7 @@
     {{ fields.htmlField('', type_value, type_label) }}
 
     {% if item.isNewID(item.getID()) %}
-        {{ fields.sliderField('_add_several', params.several ? 1 : 0, __('Add several ports')) }}
+        {{ fields.sliderField('_add_several', 0, __('Add several ports')) }}
         <script>
             (function() {
                 const checkbox = $('input[type="checkbox"][name="_add_several"]');
@@ -57,10 +57,12 @@
                         if (chkbox.prop('checked')) {
                             form.find('.single-port-field').addClass('d-none');
                             form.find('.multiple-port-fields').removeClass('d-none');
+                            form.find('.network-name-section').addClass('d-none');
                             form.find('input[name="several"]').prop('disabled', false);
                         } else {
                             form.find('.single-port-field').removeClass('d-none');
                             form.find('.multiple-port-fields').addClass('d-none');
+                            form.find('.network-name-section').removeClass('d-none');
                             form.find('input[name="several"]').prop('disabled', true);
                         }
                     });
@@ -69,10 +71,10 @@
         </script>
     {% endif %}
 
-    <div class="single-port-field {{ params.several ? 'd-none' : '' }}">
+    <div class="single-port-field">
         {{ fields.numberField('logical_number', item.fields['logical_number'], _n('Port number', 'Port number', 1)) }}
     </div>
-    <div class="multiple-port-fields {{ not params.several ? 'd-none' : '' }}">
+    <div class="multiple-port-fields d-none">
         {% set logical_num_field %}
             <div class="d-flex">
                 {{ fields.numberField('from_logical_number', 0, null, {
@@ -87,7 +89,7 @@
             </div>
         {% endset %}
         {{ fields.htmlField('', logical_num_field, _n('Port number', 'Port number', 1)) }}
-        <input type="hidden" name="several" value="yes" {{ not params.several ? 'disabled' : '' }}>
+        <input type="hidden" name="several" value="yes" disabled>
     </div>
     {{ fields.textField('name', item.fields['name'], __('Name')) }}
     {{ fields.textField('ifalias', item.fields['ifalias'], __('Alias')) }}
@@ -117,7 +119,7 @@
         {{ call([instantiation, 'showInstantiationForm'], [item, params, recursive_items]) }}
     {% endif %}
 
-    {% if not params.several %}
+    <div class="network-name-section">
         {{ call('NetworkName::showFormForNetworkPort', [item.getID()]) }}
-    {% endif %}
+    </div>
 {% endblock %}
