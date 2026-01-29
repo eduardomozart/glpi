@@ -1015,11 +1015,9 @@ class Item_SoftwareVersion extends CommonDBRelation
             echo "<input type='hidden' name='itemtype' value='" . htmlescape($itemtype) . "'>";
             echo "<input type='hidden' name='items_id' value='$items_id'>";
             echo "<div class='d-flex'>";
-            echo "<div class='col-auto'>";
+            echo "<div class='btn-group btn-group-sm'>";
             Software::dropdownSoftwareToInstall("softwareversions_id", $entities_id);
-            echo "</div>";
-            echo "<div class='col-auto'>";
-            echo "<button type='submit' name='add' class='btn btn-primary ms-1'>";
+            echo "<button type='submit' name='add' class='btn btn-primary'>";
             echo "<i class='ti ti-link'></i>" . _sx('button', 'Install');
             echo "</button>";
             echo "</div>";
@@ -1225,11 +1223,9 @@ class Item_SoftwareVersion extends CommonDBRelation
             echo "<input type='hidden' name='itemtype' value='" . htmlescape($itemtype) . "'>";
             echo "<input type='hidden' name='items_id' value='$items_id'>";
             echo "<div class='d-flex'>";
-            echo "<div class='col-auto'>";
+            echo "<div class='btn-group btn-group-sm'>";
             Software::dropdownLicenseToInstall("softwarelicenses_id", $entities_id);
-            echo "</div>";
-            echo "<div class='col-auto'>";
-            echo "<button type='submit' name='add' class='btn btn-primary ms-1'>";
+            echo "<button type='submit' name='add' class='btn btn-primary'>";
             echo "<i class='ti ti-link'></i>" . _sx('button', 'Add');
             echo "</button>";
             echo "</div>";
