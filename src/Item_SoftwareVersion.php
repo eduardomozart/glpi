@@ -1227,7 +1227,7 @@ class Item_SoftwareVersion extends CommonDBRelation
             echo "<form method='post' action='" . htmlescape(Item_SoftwareLicense::getFormURL()) . "'>";
             echo __s('Add a licence');
             echo Html::showToolTip(
-                __s('Associate a software license to this item. Licenses define the usage rights for the software installed on this asset.'),
+                __s('Associate a software license with this item. Licenses define the usage rights for the software installed on this asset.'),
                 ['display' => false]
             );
             echo "<input type='hidden' name='itemtype' value='" . htmlescape($itemtype) . "'>";
