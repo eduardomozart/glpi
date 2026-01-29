@@ -46,7 +46,34 @@
     {{ fields.nullField() }}
 
     {% if item.isNewID(item.getID()) %}
-        {{ fields.sliderField('_add_several', 0, __('Add several ports')) }}
+        {# Custom row combining checkbox and port fields #}
+        <div class="form-field row align-items-center col-12 col-sm-6 mb-2">
+            {# Left side: checkbox label and input #}
+            <div class="col-xxl-5 text-xxl-end">
+                <label class="col-form-label">{{ __('Add several ports') }}</label>
+            </div>
+            {# Right side: checkbox control and port fields #}
+            <div class="col-xxl-7 d-flex align-items-center field-container">
+                <label class="form-check form-switch mt-2 me-3">
+                    <input type="hidden" name="_add_several" value="0" />
+                    <input type="checkbox" name="_add_several" value="1" class="form-check-input" id="_add_several">
+                </label>
+                {# Single port number field (shown when unchecked) #}
+                <div class="single-port-field flex-grow-1">
+                    <input type="number" name="logical_number" value="{{ item.fields['logical_number'] }}" class="form-control" />
+                </div>
+                {# Multiple port fields (shown when checked) #}
+                <div class="multiple-port-fields d-none flex-grow-1">
+                    <div class="d-flex">
+                        <input type="number" name="from_logical_number" value="0" class="form-control flex-grow-1" />
+                        <span class="mx-1 mt-2 text-nowrap">--></span>
+                        <input type="number" name="to_logical_number" value="0" class="form-control flex-grow-1" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <input type="hidden" name="several" value="yes" disabled>
+        
         <script>
             (function() {
                 const checkbox = $('input[type="checkbox"][name="_add_several"]');
@@ -74,31 +101,6 @@
             })();
         </script>
     {% endif %}
-
-    {{ fields.numberField('logical_number', item.fields['logical_number'], _n('Port number', 'Port number', 1), {
-        'add_field_class': 'single-port-field'
-    }) }}
-    
-    {% set logical_num_field %}
-        <div class="d-flex">
-            {{ fields.numberField('from_logical_number', 0, null, {
-                no_label: true,
-                mb: '',
-                field_class: 'flex-grow-1'
-            }) }}
-            <span class="mx-1 mt-2 text-nowrap">--></span>
-            {{ fields.numberField('to_logical_number', 0, null, {
-                no_label: true,
-                mb: '',
-                field_class: 'flex-grow-1'
-            }) }}
-        </div>
-    {% endset %}
-    {{ fields.htmlField('', logical_num_field, _n('Port number', 'Port number', 1), {
-        'add_field_class': 'multiple-port-fields d-none',
-        'wrapper_class': ''
-    }) }}
-    <input type="hidden" name="several" value="yes" disabled>
     {{ fields.textField('name', item.fields['name'], __('Name')) }}
     {{ fields.textField('ifalias', item.fields['ifalias'], __('Alias')) }}
 
