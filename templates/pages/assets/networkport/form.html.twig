@@ -46,18 +46,26 @@
     {% if item.isNewID(item.getID()) %}
         {{ fields.sliderField('_add_several', params.several ? 1 : 0, __('Add several ports')) }}
         <script>
-            $(document).on('change', 'input[type="checkbox"][name="_add_several"]', (e) => {
-                const chkbox = $(e.target);
-                const form = chkbox.closest('form');
-                
-                if (chkbox.prop('checked')) {
-                    form.find('.single-port-field').addClass('d-none');
-                    form.find('.multiple-port-fields').removeClass('d-none');
-                } else {
-                    form.find('.single-port-field').removeClass('d-none');
-                    form.find('.multiple-port-fields').addClass('d-none');
+            (function() {
+                const checkbox = $('input[type="checkbox"][name="_add_several"]');
+                if (checkbox.length && !checkbox.data('handler-bound')) {
+                    checkbox.data('handler-bound', true);
+                    checkbox.on('change', function(e) {
+                        const chkbox = $(this);
+                        const form = chkbox.closest('form');
+                        
+                        if (chkbox.prop('checked')) {
+                            form.find('.single-port-field').addClass('d-none');
+                            form.find('.multiple-port-fields').removeClass('d-none');
+                            form.find('input[name="several"]').prop('disabled', false);
+                        } else {
+                            form.find('.single-port-field').removeClass('d-none');
+                            form.find('.multiple-port-fields').addClass('d-none');
+                            form.find('input[name="several"]').prop('disabled', true);
+                        }
+                    });
                 }
-            });
+            })();
         </script>
     {% endif %}
 
@@ -79,7 +87,7 @@
             </div>
         {% endset %}
         {{ fields.htmlField('', logical_num_field, _n('Port number', 'Port number', 1)) }}
-        <input type="hidden" name="several" value="yes">
+        <input type="hidden" name="several" value="yes" {{ not params.several ? 'disabled' : '' }}>
     </div>
     {{ fields.textField('name', item.fields['name'], __('Name')) }}
     {{ fields.textField('ifalias', item.fields['ifalias'], __('Alias')) }}
