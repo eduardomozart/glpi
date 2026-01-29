@@ -685,7 +685,7 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        $ajax_span = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
+        $ajax_span = "<span id='show_" . htmlescape($myname . $rand) . "' class='d-contents'>&nbsp;</span>\n";
         
         echo self::injectAjaxSpanIntoDropdown($dropdown_html, $ajax_span);
 
@@ -749,7 +749,7 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        $ajax_span = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
+        $ajax_span = "<span id='show_" . htmlescape($myname . $rand) . "' class='d-contents'>&nbsp;</span>\n";
         
         echo self::injectAjaxSpanIntoDropdown($dropdown_html, $ajax_span);
 
