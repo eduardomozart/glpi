@@ -250,7 +250,9 @@
 
     // Fix for select2 inside AJAX span wrappers within btn-group
     // The AJAX span breaks Bootstrap's direct child selector
-    .btn-group > span > & {
+    
+    // When span is directly after a button (e.g., info icon), remove border and radius
+    .btn-group > .btn + span > & {
         flex-grow: 1;
         flex-basis: content;
 
@@ -258,6 +260,17 @@
             border-top-left-radius: 0;
             border-bottom-left-radius: 0;
             border-left: 0;
+        }
+    }
+    
+    // When span follows another select2 directly (no button between), only remove radius, keep border
+    .btn-group > &:not(:last-child) + span > & {
+        flex-grow: 1;
+        flex-basis: content;
+
+        .select2-selection {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
         }
     }
 }
