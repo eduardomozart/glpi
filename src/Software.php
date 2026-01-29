@@ -700,7 +700,7 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
         // Use Dropdown::show with a condition to filter software with licenses
         // This enables automatic comments/tooltips like dropdownSoftwareToInstall
         $where = [
-            'glpi_softwares.id' => new \QuerySubQuery([
+            'glpi_softwares.id' => new QuerySubQuery([
                 'SELECT' => 'softwares_id',
                 'DISTINCT' => true,
                 'FROM' => 'glpi_softwarelicenses',
