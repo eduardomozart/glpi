@@ -43,6 +43,8 @@
     {% set type_value = call('NetworkPort::displayRecursiveItems', [recursive_items, 'Link', false]) %}
     {{ fields.htmlField('', type_value, type_label) }}
 
+    {{ fields.nullField() }}
+
     {% if item.isNewID(item.getID()) %}
         {{ fields.sliderField('_add_several', 0, __('Add several ports')) }}
         <script>
@@ -58,11 +60,13 @@
                             form.find('.single-port-field').addClass('d-none');
                             form.find('.multiple-port-fields').removeClass('d-none');
                             form.find('.network-name-section').addClass('d-none');
+                            form.find('.network-name-section input, .network-name-section select, .network-name-section textarea').prop('disabled', true);
                             form.find('input[name="several"]').prop('disabled', false);
                         } else {
                             form.find('.single-port-field').removeClass('d-none');
                             form.find('.multiple-port-fields').addClass('d-none');
                             form.find('.network-name-section').removeClass('d-none');
+                            form.find('.network-name-section input, .network-name-section select, .network-name-section textarea').prop('disabled', false);
                             form.find('input[name="several"]').prop('disabled', true);
                         }
                     });
