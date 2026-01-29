@@ -53,11 +53,9 @@
                 if (chkbox.prop('checked')) {
                     form.find('.single-port-field').addClass('d-none');
                     form.find('.multiple-port-fields').removeClass('d-none');
-                    form.find('input[name="several"]').val('yes');
                 } else {
                     form.find('.single-port-field').removeClass('d-none');
                     form.find('.multiple-port-fields').addClass('d-none');
-                    form.find('input[name="several"]').val('');
                 }
             });
         </script>
@@ -81,8 +79,8 @@
             </div>
         {% endset %}
         {{ fields.htmlField('', logical_num_field, _n('Port number', 'Port number', 1)) }}
+        <input type="hidden" name="several" value="yes">
     </div>
-    <input type="hidden" name="several" value="{{ params.several ? 'yes' : '' }}"}
     {{ fields.textField('name', item.fields['name'], __('Name')) }}
     {{ fields.textField('ifalias', item.fields['ifalias'], __('Alias')) }}
 
