@@ -43,6 +43,25 @@
     {% set type_value = call('NetworkPort::displayRecursiveItems', [recursive_items, 'Link', false]) %}
     {{ fields.htmlField('', type_value, type_label) }}
 
+    {% if item.isNewID(item.getID()) %}
+        {{ fields.sliderField('_add_several', params.several ? 1 : 0, __('Add several ports')) }}
+        <script>
+            $(document).on('change', 'input[type="checkbox"][name="_add_several"]', (e) => {
+                const chkbox = $(e.target);
+                const form = chkbox.closest('form');
+                const currentUrl = new URL(window.location.href);
+                
+                if (chkbox.prop('checked')) {
+                    currentUrl.searchParams.set('several', '1');
+                } else {
+                    currentUrl.searchParams.delete('several');
+                }
+                
+                window.location.href = currentUrl.toString();
+            });
+        </script>
+    {% endif %}
+
     {% if not params.several %}
         {{ fields.numberField('logical_number', item.fields['logical_number'], _n('Port number', 'Port number', 1)) }}
     {% else %}
