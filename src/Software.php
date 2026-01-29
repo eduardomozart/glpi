@@ -687,18 +687,7 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
 
         $ajax_span = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
         
-        // If dropdown has btn-group, inject the AJAX span inside it
-        if (preg_match('/<div[^>]*class=["\'][^"\']*btn-group[^"\']*["\'][^>]*>(.*)<\/div>\s*$/s', $dropdown_html, $matches)) {
-            // Inject AJAX span before the closing </div>
-            $dropdown_html = preg_replace('/(<\/div>)\s*$/s', $ajax_span . '$1', $dropdown_html);
-            echo $dropdown_html;
-        } else {
-            // No btn-group found, wrap everything in one
-            echo "<div class='btn-group btn-group-sm'>";
-            echo $dropdown_html;
-            echo $ajax_span;
-            echo "</div>";
-        }
+        echo self::injectAjaxSpanIntoDropdown($dropdown_html, $ajax_span);
 
         return $rand;
     }
@@ -762,20 +751,35 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
 
         $ajax_span = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
         
-        // If dropdown has btn-group, inject the AJAX span inside it
-        if (preg_match('/<div[^>]*class=["\'][^"\']*btn-group[^"\']*["\'][^>]*>(.*)<\/div>\s*$/s', $dropdown_html, $matches)) {
-            // Inject AJAX span before the closing </div>
-            $dropdown_html = preg_replace('/(<\/div>)\s*$/s', $ajax_span . '$1', $dropdown_html);
-            echo $dropdown_html;
-        } else {
-            // No btn-group found, wrap everything in one
-            echo "<div class='btn-group btn-group-sm'>";
-            echo $dropdown_html;
-            echo $ajax_span;
-            echo "</div>";
-        }
+        echo self::injectAjaxSpanIntoDropdown($dropdown_html, $ajax_span);
 
         return $rand;
+    }
+
+    /**
+     * Helper method to inject AJAX span into dropdown HTML
+     * If dropdown has a btn-group, inject the AJAX span inside it
+     * Otherwise, wrap everything in a btn-group
+     *
+     * @param string $dropdown_html The dropdown HTML output
+     * @param string $ajax_span The AJAX span to inject
+     *
+     * @return string The modified HTML
+     */
+    private static function injectAjaxSpanIntoDropdown(string $dropdown_html, string $ajax_span): string
+    {
+        // Simple string-based detection and injection
+        // Look for the last occurrence of btn-group closing div
+        $btn_group_pos = strrpos($dropdown_html, "</div>");
+        $has_btn_group = strpos($dropdown_html, "btn-group") !== false;
+        
+        if ($has_btn_group && $btn_group_pos !== false) {
+            // Inject AJAX span before the last closing div tag
+            return substr_replace($dropdown_html, $ajax_span, $btn_group_pos, 0);
+        } else {
+            // No btn-group found, wrap everything in one
+            return "<div class='btn-group btn-group-sm'>" . $dropdown_html . $ajax_span . "</div>";
+        }
     }
 
     /**
