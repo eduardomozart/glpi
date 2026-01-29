@@ -49,22 +49,24 @@
             $(document).on('change', 'input[type="checkbox"][name="_add_several"]', (e) => {
                 const chkbox = $(e.target);
                 const form = chkbox.closest('form');
-                const currentUrl = new URL(window.location.href);
                 
                 if (chkbox.prop('checked')) {
-                    currentUrl.searchParams.set('several', '1');
+                    form.find('.single-port-field').addClass('d-none');
+                    form.find('.multiple-port-fields').removeClass('d-none');
+                    form.find('input[name="several"]').val('yes');
                 } else {
-                    currentUrl.searchParams.delete('several');
+                    form.find('.single-port-field').removeClass('d-none');
+                    form.find('.multiple-port-fields').addClass('d-none');
+                    form.find('input[name="several"]').val('');
                 }
-                
-                window.location.href = currentUrl.toString();
             });
         </script>
     {% endif %}
 
-    {% if not params.several %}
+    <div class="single-port-field {{ params.several ? 'd-none' : '' }}">
         {{ fields.numberField('logical_number', item.fields['logical_number'], _n('Port number', 'Port number', 1)) }}
-    {% else %}
+    </div>
+    <div class="multiple-port-fields {{ not params.several ? 'd-none' : '' }}">
         {% set logical_num_field %}
             <div class="d-flex">
                 {{ fields.numberField('from_logical_number', 0, null, {
@@ -79,8 +81,8 @@
             </div>
         {% endset %}
         {{ fields.htmlField('', logical_num_field, _n('Port number', 'Port number', 1)) }}
-        <input type="hidden" name="several" value="yes">
-    {% endif %}
+    </div>
+    <input type="hidden" name="several" value="{{ params.several ? 'yes' : '' }}"}
     {{ fields.textField('name', item.fields['name'], __('Name')) }}
     {{ fields.textField('ifalias', item.fields['ifalias'], __('Alias')) }}
 
