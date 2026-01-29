@@ -95,7 +95,8 @@
         </div>
     {% endset %}
     {{ fields.htmlField('', logical_num_field, _n('Port number', 'Port number', 1), {
-        'add_field_class': 'multiple-port-fields d-none'
+        'add_field_class': 'multiple-port-fields d-none',
+        'wrapper_class': ''
     }) }}
     <input type="hidden" name="several" value="yes" disabled>
     {{ fields.textField('name', item.fields['name'], __('Name')) }}
