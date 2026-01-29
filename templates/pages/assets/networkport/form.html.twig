@@ -83,12 +83,14 @@
         <div class="d-flex">
             {{ fields.numberField('from_logical_number', 0, null, {
                 no_label: true,
-                mb: ''
+                mb: '',
+                field_class: 'flex-grow-1'
             }) }}
             <span class="mx-1 mt-2 text-nowrap">--></span>
             {{ fields.numberField('to_logical_number', 0, null, {
                 no_label: true,
-                mb: ''
+                mb: '',
+                field_class: 'flex-grow-1'
             }) }}
         </div>
     {% endset %}
