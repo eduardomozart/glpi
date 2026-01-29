@@ -75,26 +75,27 @@
         </script>
     {% endif %}
 
-    <div class="single-port-field">
-        {{ fields.numberField('logical_number', item.fields['logical_number'], _n('Port number', 'Port number', 1)) }}
-    </div>
-    <div class="multiple-port-fields d-none">
-        {% set logical_num_field %}
-            <div class="d-flex">
-                {{ fields.numberField('from_logical_number', 0, null, {
-                    no_label: true,
-                    mb: ''
-                }) }}
-                <span class="mx-1 mt-2 text-nowrap">--></span>
-                {{ fields.numberField('to_logical_number', 0, null, {
-                    no_label: true,
-                    mb: ''
-                }) }}
-            </div>
-        {% endset %}
-        {{ fields.htmlField('', logical_num_field, _n('Port number', 'Port number', 1)) }}
-        <input type="hidden" name="several" value="yes" disabled>
-    </div>
+    {{ fields.numberField('logical_number', item.fields['logical_number'], _n('Port number', 'Port number', 1), {
+        'add_field_class': 'single-port-field'
+    }) }}
+    
+    {% set logical_num_field %}
+        <div class="d-flex">
+            {{ fields.numberField('from_logical_number', 0, null, {
+                no_label: true,
+                mb: ''
+            }) }}
+            <span class="mx-1 mt-2 text-nowrap">--></span>
+            {{ fields.numberField('to_logical_number', 0, null, {
+                no_label: true,
+                mb: ''
+            }) }}
+        </div>
+    {% endset %}
+    {{ fields.htmlField('', logical_num_field, _n('Port number', 'Port number', 1), {
+        'add_field_class': 'multiple-port-fields d-none'
+    }) }}
+    <input type="hidden" name="several" value="yes" disabled>
     {{ fields.textField('name', item.fields['name'], __('Name')) }}
     {{ fields.textField('ifalias', item.fields['ifalias'], __('Alias')) }}
 
