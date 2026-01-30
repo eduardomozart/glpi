@@ -774,8 +774,8 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        // Wrap in btn-group and inject the span inside it
-        // showFromArray doesn't create btn-group, so we need to do it manually
+        // Don't wrap in btn-group for showFromArray (no info button)
+        // Just append the AJAX span after the dropdown
         $span_html = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>";
         
         if (strpos($dropdown_html, "btn-group") !== false) {
@@ -788,8 +788,9 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
                 $dropdown_html .= $span_html;
             }
         } else {
-            // showFromArray doesn't create btn-group, so wrap everything in one
-            $dropdown_html = "<div class='btn-group btn-group-sm' role='group'>" . $dropdown_html . $span_html . "</div>";
+            // showFromArray doesn't create btn-group and we shouldn't add one
+            // Just append the span after the dropdown
+            $dropdown_html .= $span_html;
         }
         
         echo $dropdown_html;
