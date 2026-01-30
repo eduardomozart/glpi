@@ -249,6 +249,16 @@
     }
 }
 
+// Handle AJAX-loaded select2 containers inside btn-group spans
+// These are nested (not direct children), so need a separate rule
+.btn-group > span[id^="show_"] .select2-container {
+    .select2-selection {
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+        border-right: 0;
+    }
+}
+
 // fix z-index issue for select2 dropdown container with a boostrap modal
 .modal-backdrop ~ .select2-container--open {
     z-index: calc(var(--glpi-zindex-modal) + 1);
