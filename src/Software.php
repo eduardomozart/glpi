@@ -660,6 +660,8 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
     {
         global $CFG_GLPI;
 
+        echo "<div class='btn-group'>";
+
         // Make a select box
         $where = getEntitiesRestrictCriteria(
             'glpi_softwares',
@@ -682,6 +684,7 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
         );
 
         echo "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
+        echo "</div>";
 
         return $rand;
     }
@@ -697,6 +700,8 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
     public static function dropdownLicenseToInstall($myname, $entity_restrict)
     {
         global $CFG_GLPI, $DB;
+
+        echo "<div class='btn-group'>";
 
         $iterator = $DB->request([
             'SELECT'          => [
@@ -740,6 +745,7 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
         );
 
         echo "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
+        echo "</div>";
 
         return $rand;
     }
