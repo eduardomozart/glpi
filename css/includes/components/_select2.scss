@@ -261,8 +261,10 @@
     }
     
     // Remove border only when button precedes span (prevents double border)
-    .btn-group > .btn + span > & .select2-selection {
-        border-left: 0;
+    .btn-group > .btn + span > & {
+        .select2-selection {
+            border-left: 0;
+        }
     }
 }
 
