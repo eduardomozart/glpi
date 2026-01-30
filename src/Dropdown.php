@@ -1846,6 +1846,7 @@ HTML;
             'aria_label'                            => '',
             'specific_tags_items_id_dropdown'       => [],
             'add_data_attributes_itemtype_dropdown' => '',
+            'inline_layout'                         => false,
         ];
 
         if (count($options)) {
@@ -1908,7 +1909,11 @@ HTML;
             false
         );
 
-        $out .= "<br><span id='" . htmlescape($show_id) . "'></span>";
+        if ($params['inline_layout']) {
+            $out .= "<span id='" . htmlescape($show_id) . "'></span>";
+        } else {
+            $out .= "<br><span id='" . htmlescape($show_id) . "'></span>";
+        }
 
         // We check $options as the caller will set $options['default_itemtype'] only if it needs a
         // default itemtype and the default value can be '' thus empty won't be valid !
