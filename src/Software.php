@@ -671,9 +671,10 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             true
         );
         
-        // Display the dropdown (which creates its own btn-group with the info button)
-        Dropdown::show('Software', [
+        // Get the dropdown HTML without displaying it
+        $dropdown_html = Dropdown::show('Software', [
             'condition' => ['WHERE' => $where],
+            'display' => false,
             'rand' => $rand
         ]);
 
@@ -689,8 +690,24 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        // Output the AJAX span AFTER the btn-group (not inside it)
-        echo "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
+        // Inject the span inside the btn-group wrapper
+        // Find the position of the btn-group closing tag and inject the span before it
+        $span_html = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>";
+        if (strpos($dropdown_html, "btn-group") !== false) {
+            // If btn-group exists, inject span before the closing tag
+            $pos = strrpos($dropdown_html, "</div>");
+            if ($pos !== false) {
+                $dropdown_html = substr_replace($dropdown_html, $span_html, $pos, 0);
+            } else {
+                // Fallback: append the span
+                $dropdown_html .= $span_html;
+            }
+        } else {
+            // If no btn-group, append the span after the dropdown
+            $dropdown_html .= $span_html;
+        }
+        
+        echo $dropdown_html;
 
         return $rand;
     }
@@ -738,9 +755,10 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $values[$softwares_id] = $data["name"];
         }
         
-        // Display the dropdown (which creates its own btn-group with the info button)
-        Dropdown::showFromArray('softwares_id', $values, [
+        // Get the dropdown HTML without displaying it
+        $dropdown_html = Dropdown::showFromArray('softwares_id', $values, [
             'display_emptychoice' => true,
+            'display' => false,
             'rand' => $rand
         ]);
 
@@ -756,8 +774,24 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        // Output the AJAX span AFTER the btn-group (not inside it)
-        echo "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
+        // Inject the span inside the btn-group wrapper
+        // Find the position of the btn-group closing tag and inject the span before it
+        $span_html = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>";
+        if (strpos($dropdown_html, "btn-group") !== false) {
+            // If btn-group exists, inject span before the closing tag
+            $pos = strrpos($dropdown_html, "</div>");
+            if ($pos !== false) {
+                $dropdown_html = substr_replace($dropdown_html, $span_html, $pos, 0);
+            } else {
+                // Fallback: append the span
+                $dropdown_html .= $span_html;
+            }
+        } else {
+            // If no btn-group, append the span after the dropdown
+            $dropdown_html .= $span_html;
+        }
+        
+        echo $dropdown_html;
 
         return $rand;
     }
