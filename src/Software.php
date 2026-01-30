@@ -774,11 +774,12 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        // Inject the span inside the btn-group wrapper
-        // Find the position of the btn-group closing tag and inject the span before it
+        // Wrap in btn-group and inject the span inside it
+        // showFromArray doesn't create btn-group, so we need to do it manually
         $span_html = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>";
+        
         if (strpos($dropdown_html, "btn-group") !== false) {
-            // If btn-group exists, inject span before the closing tag
+            // If btn-group exists (from Dropdown::show), inject span before the closing tag
             $pos = strrpos($dropdown_html, "</div>");
             if ($pos !== false) {
                 $dropdown_html = substr_replace($dropdown_html, $span_html, $pos, 0);
@@ -787,8 +788,8 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
                 $dropdown_html .= $span_html;
             }
         } else {
-            // If no btn-group, append the span after the dropdown
-            $dropdown_html .= $span_html;
+            // showFromArray doesn't create btn-group, so wrap everything in one
+            $dropdown_html = "<div class='btn-group btn-group-sm' role='group'>" . $dropdown_html . $span_html . "</div>";
         }
         
         echo $dropdown_html;

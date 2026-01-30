@@ -249,13 +249,15 @@
     }
 }
 
-// Handle AJAX-loaded select2 containers inside btn-group spans
-// These are nested (not direct children), so need a separate rule
-.btn-group > span[id^="show_"] .select2-container {
+// Fix for select2 inside AJAX span wrappers within btn-group
+// The AJAX span breaks Bootstrap's direct child selector
+.btn-group > span > .select2-container {
+    flex-grow: 1;
+    flex-basis: content;
     .select2-selection {
-        border-top-right-radius: 0;
-        border-bottom-right-radius: 0;
-        border-right: 0;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-left: 0;
     }
 }
 
