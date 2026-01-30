@@ -493,13 +493,20 @@ final class Asset_PeripheralAsset extends CommonDBRelation
                 {% import 'components/form/fields_macros.html.twig' as fields %}
                 <div class="mb-3">
                     <form method="post" action="{{ 'Glpi\\\\Asset\\\\Asset_PeripheralAsset'|itemtype_form_path }}">
-                        {{ fields.dropdownItemsFromItemtypes('', label, dropdown_params) }}
                         {{ fields.hiddenField('items_id_peripheral', peripheral.getID()) }}
                         {{ fields.hiddenField('itemtype_peripheral', peripheral.getType()) }}
                         {{ fields.csrfField() }}
                         {{ withtemplate ? fields.hiddenField('_no_history', 1) }}
-                        <div class="d-flex flex-row-reverse">
-                            <button type="submit" name="add" class="btn btn-primary">{{ btn_label }}</button>
+                        <div class="d-flex">
+                            {{ fields.dropdownItemsFromItemtypes('', label, dropdown_params|merge({
+                                field_class: 'd-flex',
+                                width: 'auto',
+                                mb: '',
+                                no_label: true,
+                            })) }}
+                            <div class="col-auto">
+                                <button type="submit" name="add" class="btn btn-primary ms-1">{{ btn_label }}</button>
+                            </div>
                         </div>
                     </form>
                 </div>
