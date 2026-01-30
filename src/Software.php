@@ -667,21 +667,7 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $entity_restrict,
             true
         );
-        
-        // Get the dropdown HTML without displaying it
-        // Let Dropdown generate its own rand
-        $dropdown_html = Dropdown::show('Software', [
-            'condition' => ['WHERE' => $where],
-            'display' => false
-        ]);
-        
-        // Extract rand from the dropdown HTML
-        if (preg_match('/dropdown_softwares_id(\d+)/', $dropdown_html, $matches)) {
-            $rand = (int) $matches[1];
-        } else {
-            // Fallback: generate rand if extraction fails
-            $rand = mt_rand();
-        }
+        $rand = Dropdown::show('Software', ['condition' => ['WHERE' => $where]]);
 
         $paramsselsoft = [
             'softwares_id' => '__VALUE__',
@@ -695,24 +681,7 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        // Inject the span inside the btn-group wrapper
-        // Find the position of the btn-group closing tag and inject the span before it
-        $span_html = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>";
-        if (strpos($dropdown_html, "btn-group") !== false) {
-            // If btn-group exists, inject span before the closing tag
-            $pos = strrpos($dropdown_html, "</div>");
-            if ($pos !== false) {
-                $dropdown_html = substr_replace($dropdown_html, $span_html, $pos, 0);
-            } else {
-                // Fallback: append the span
-                $dropdown_html .= $span_html;
-            }
-        } else {
-            // If no btn-group, append the span after the dropdown
-            $dropdown_html .= $span_html;
-        }
-        
-        echo $dropdown_html;
+        echo "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
 
         return $rand;
     }
@@ -756,21 +725,7 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $softwares_id          = $data["id"];
             $values[$softwares_id] = $data["name"];
         }
-        
-        // Get the dropdown HTML without displaying it
-        // Let Dropdown generate its own rand
-        $dropdown_html = Dropdown::showFromArray('softwares_id', $values, [
-            'display_emptychoice' => true,
-            'display' => false
-        ]);
-        
-        // Extract rand from the dropdown HTML
-        if (preg_match('/dropdown_softwares_id(\d+)/', $dropdown_html, $matches)) {
-            $rand = (int) $matches[1];
-        } else {
-            // Fallback: generate rand if extraction fails
-            $rand = mt_rand();
-        }
+        $rand = Dropdown::showFromArray('softwares_id', $values, ['display_emptychoice' => true]);
 
         $paramsselsoft = ['softwares_id'    => '__VALUE__',
             'entity_restrict' => $entity_restrict,
@@ -784,26 +739,7 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        // Don't wrap in btn-group for showFromArray (no info button)
-        // Just append the AJAX span after the dropdown
-        $span_html = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>";
-        
-        if (strpos($dropdown_html, "btn-group") !== false) {
-            // If btn-group exists (from Dropdown::show), inject span before the closing tag
-            $pos = strrpos($dropdown_html, "</div>");
-            if ($pos !== false) {
-                $dropdown_html = substr_replace($dropdown_html, $span_html, $pos, 0);
-            } else {
-                // Fallback: append the span
-                $dropdown_html .= $span_html;
-            }
-        } else {
-            // showFromArray doesn't create btn-group and we shouldn't add one
-            // Just append the span after the dropdown
-            $dropdown_html .= $span_html;
-        }
-        
-        echo $dropdown_html;
+        echo "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
 
         return $rand;
     }
