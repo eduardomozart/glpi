@@ -660,8 +660,6 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
     {
         global $CFG_GLPI;
 
-        echo "<div class='btn-group'>";
-
         // Make a select box
         $where = getEntitiesRestrictCriteria(
             'glpi_softwares',
@@ -669,7 +667,16 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $entity_restrict,
             true
         );
-        $rand = Dropdown::show('Software', ['condition' => ['WHERE' => $where]]);
+        
+        // Get the dropdown HTML without displaying it
+        $dropdown_html = Dropdown::show('Software', [
+            'condition' => ['WHERE' => $where],
+            'display' => false
+        ]);
+        
+        // Extract the rand value from the dropdown HTML
+        preg_match('/dropdown_softwares_id(\d+)/', $dropdown_html, $matches);
+        $rand = $matches[1] ?? mt_rand();
 
         $paramsselsoft = [
             'softwares_id' => '__VALUE__',
@@ -683,8 +690,24 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        echo "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
-        echo "</div>";
+        // Inject the span inside the btn-group wrapper
+        // Find the position of the btn-group closing tag and inject the span before it
+        $span_html = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>";
+        if (strpos($dropdown_html, "btn-group") !== false) {
+            // If btn-group exists, inject span before the closing tag
+            $pos = strrpos($dropdown_html, "</div>");
+            if ($pos !== false) {
+                $dropdown_html = substr_replace($dropdown_html, $span_html, $pos, 0);
+            } else {
+                // Fallback: append the span
+                $dropdown_html .= $span_html;
+            }
+        } else {
+            // If no btn-group, append the span after the dropdown
+            $dropdown_html .= $span_html;
+        }
+        
+        echo $dropdown_html;
 
         return $rand;
     }
@@ -700,8 +723,6 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
     public static function dropdownLicenseToInstall($myname, $entity_restrict)
     {
         global $CFG_GLPI, $DB;
-
-        echo "<div class='btn-group'>";
 
         $iterator = $DB->request([
             'SELECT'          => [
@@ -730,7 +751,16 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $softwares_id          = $data["id"];
             $values[$softwares_id] = $data["name"];
         }
-        $rand = Dropdown::showFromArray('softwares_id', $values, ['display_emptychoice' => true]);
+        
+        // Get the dropdown HTML without displaying it
+        $dropdown_html = Dropdown::showFromArray('softwares_id', $values, [
+            'display_emptychoice' => true,
+            'display' => false
+        ]);
+        
+        // Extract the rand value from the dropdown HTML
+        preg_match('/dropdown_softwares_id(\d+)/', $dropdown_html, $matches);
+        $rand = $matches[1] ?? mt_rand();
 
         $paramsselsoft = ['softwares_id'    => '__VALUE__',
             'entity_restrict' => $entity_restrict,
@@ -744,8 +774,24 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
             $paramsselsoft
         );
 
-        echo "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>\n";
-        echo "</div>";
+        // Inject the span inside the btn-group wrapper
+        // Find the position of the btn-group closing tag and inject the span before it
+        $span_html = "<span id='show_" . htmlescape($myname . $rand) . "'>&nbsp;</span>";
+        if (strpos($dropdown_html, "btn-group") !== false) {
+            // If btn-group exists, inject span before the closing tag
+            $pos = strrpos($dropdown_html, "</div>");
+            if ($pos !== false) {
+                $dropdown_html = substr_replace($dropdown_html, $span_html, $pos, 0);
+            } else {
+                // Fallback: append the span
+                $dropdown_html .= $span_html;
+            }
+        } else {
+            // If no btn-group, append the span after the dropdown
+            $dropdown_html .= $span_html;
+        }
+        
+        echo $dropdown_html;
 
         return $rand;
     }
