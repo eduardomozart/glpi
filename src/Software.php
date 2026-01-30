@@ -660,9 +660,6 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
     {
         global $CFG_GLPI;
 
-        // Generate rand value to use consistently
-        $rand = mt_rand();
-
         // Make a select box
         $where = getEntitiesRestrictCriteria(
             'glpi_softwares',
@@ -672,11 +669,19 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
         );
         
         // Get the dropdown HTML without displaying it
+        // Let Dropdown generate its own rand
         $dropdown_html = Dropdown::show('Software', [
             'condition' => ['WHERE' => $where],
-            'display' => false,
-            'rand' => $rand
+            'display' => false
         ]);
+        
+        // Extract rand from the dropdown HTML
+        if (preg_match('/dropdown_softwares_id(\d+)/', $dropdown_html, $matches)) {
+            $rand = (int) $matches[1];
+        } else {
+            // Fallback: generate rand if extraction fails
+            $rand = mt_rand();
+        }
 
         $paramsselsoft = [
             'softwares_id' => '__VALUE__',
@@ -724,9 +729,6 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
     {
         global $CFG_GLPI, $DB;
 
-        // Generate rand value to use consistently
-        $rand = mt_rand();
-
         $iterator = $DB->request([
             'SELECT'          => [
                 'glpi_softwares.id',
@@ -756,11 +758,19 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
         }
         
         // Get the dropdown HTML without displaying it
+        // Let Dropdown generate its own rand
         $dropdown_html = Dropdown::showFromArray('softwares_id', $values, [
             'display_emptychoice' => true,
-            'display' => false,
-            'rand' => $rand
+            'display' => false
         ]);
+        
+        // Extract rand from the dropdown HTML
+        if (preg_match('/dropdown_softwares_id(\d+)/', $dropdown_html, $matches)) {
+            $rand = (int) $matches[1];
+        } else {
+            // Fallback: generate rand if extraction fails
+            $rand = mt_rand();
+        }
 
         $paramsselsoft = ['softwares_id'    => '__VALUE__',
             'entity_restrict' => $entity_restrict,
