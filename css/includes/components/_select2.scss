@@ -249,6 +249,18 @@
     }
 }
 
+// Fix for select2 inside AJAX span wrappers within btn-group
+// The AJAX span breaks Bootstrap's direct child selector
+.btn-group > span > .select2-container {
+    flex-grow: 1;
+    flex-basis: content;
+    .select2-selection {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+        border-left: 0;
+    }
+}
+
 // fix z-index issue for select2 dropdown container with a boostrap modal
 .modal-backdrop ~ .select2-container--open {
     z-index: calc(var(--glpi-zindex-modal) + 1);
