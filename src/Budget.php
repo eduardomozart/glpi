@@ -101,8 +101,12 @@ class Budget extends CommonDropdown
         if (!$withtemplate) {
             switch ($item::class) {
                 case self::class:
+                    $count = 0;
+                    if ($_SESSION['glpishow_count_on_tabs']) {
+                        $count = self::countForBudget($item);
+                    }
                     return [1 => self::createTabEntry(__('Main')),
-                        2 => self::createTabEntry(_n('Item', 'Items', Session::getPluralNumber()), 0, $item::class, 'ti ti-package'),
+                        2 => self::createTabEntry(_n('Item', 'Items', Session::getPluralNumber()), $count, $item::getType(), 'ti ti-package'),
                     ];
             }
         }
@@ -268,6 +272,20 @@ class Budget extends CommonDropdown
         $tab = array_merge($tab, Notepad::rawSearchOptionsToAdd());
 
         return $tab;
+    }
+
+    public static function countForBudget(Budget $item): int
+    {
+        /** @var DBmysql $DB */
+        global $DB;
+
+        $count_criteria = [
+            'FROM'  => $item->getItemListCriteria(),
+            'COUNT' => 'cpt',
+        ];
+
+        $result = $DB->request($count_criteria)->current();
+        return (int) ($result['cpt'] ?? 0);
     }
 
     /**
