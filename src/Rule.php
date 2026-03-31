@@ -52,7 +52,7 @@ class Rule extends CommonDBTM
     /** @use Clonable<static> */
     use Clonable;
 
-    public $dohistory             = true;
+    public bool $dohistory             = true;
 
     // Specific ones
     /**
@@ -61,47 +61,41 @@ class Rule extends CommonDBTM
      * FIXME: should probably not be nullable
      * @var ?array
      */
-    public $actions               = [];
+    public ?array $actions               = [];
     /**
      * Criteria affected to this rule
      *
-     * @var array
      */
-    public $criterias             = [];
+    public array $criterias             = [];
 
     /**
      * preview context ?
      *
-     * @var bool
      */
-    protected $is_preview = false;
+    protected bool $is_preview = false;
 
     /**
      * Restrict matching to self::AND_MATCHING or self::OR_MATCHING: specify value to activate
      *
      * @var self::*_MATCHING|false
      */
-    public $restrict_matching     = false;
-    /** @var string */
-    protected $rules_id_field     = 'rules_id';
+    public string|int|bool $restrict_matching     = false;
+    protected string $rules_id_field     = 'rules_id';
     /**
      * @var class-string<RuleAction>
      */
-    protected $ruleactionclass    = RuleAction::class;
+    protected string $ruleactionclass    = RuleAction::class;
     /**
      * @var class-string<RuleCriteria>
      */
-    protected $rulecriteriaclass  = RuleCriteria::class;
+    protected string $rulecriteriaclass  = RuleCriteria::class;
 
-    /** @var bool */
-    public $specific_parameters   = false;
+    public bool $specific_parameters   = false;
 
-    /** @var array */
-    public $regex_results         = [];
-    /** @var array */
-    public $criterias_results     = [];
+    public array $regex_results         = [];
+    public array $criterias_results     = [];
 
-    public static $rightname             = 'config';
+    public static string $rightname             = 'config';
 
     public const RULE_NOT_IN_CACHE       = -1;
     public const RULE_WILDCARD           = '*';
@@ -700,7 +694,7 @@ class Rule extends CommonDBTM
             case 'export':
                 if (count($ids)) {
                     $_SESSION['exportitems'] = $ids;
-                    $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_OK);
+                    $ma->itemDone($item::class, $ids, MassiveAction::ACTION_OK);
                     $ma->setRedirect('rule.backup.php?action=download&itemtype=' . $item::class);
                 }
                 break;
@@ -710,24 +704,24 @@ class Rule extends CommonDBTM
                 $collectionname = $input['rule_class_name'] . 'Collection';
                 $rulecollection = getItemForItemtype($collectionname);
                 if (!($rulecollection instanceof RuleCollection)) {
-                    $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_KO);
+                    $ma->itemDone($item::class, $ids, MassiveAction::ACTION_KO);
                     $ma->addMessage($item->getErrorMessage(ERROR_NOT_FOUND));
                 } elseif ($rulecollection->canUpdate()) {
                     foreach ($ids as $id) {
                         if ($item->getFromDB($id)) {
                             if ($rulecollection->moveRule($id, $input['ranking'], $input['move_type'])) {
-                                $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
+                                $ma->itemDone($item::class, $id, MassiveAction::ACTION_OK);
                             } else {
-                                $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                                $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                                 $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION));
                             }
                         } else {
-                            $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                            $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                             $ma->addMessage($item->getErrorMessage(ERROR_NOT_FOUND));
                         }
                     }
                 } else {
-                    $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_NORIGHT);
+                    $ma->itemDone($item::class, $ids, MassiveAction::ACTION_NORIGHT);
                     $ma->addMessage($item->getErrorMessage(ERROR_RIGHT));
                 }
                 break;
@@ -1147,7 +1141,6 @@ TWIG, $twig_params);
             'entries' => $entries,
             'row_class' => 'cursor-pointer',
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => $massiveactionparams,
         ]);
@@ -1264,7 +1257,6 @@ TWIG, $twig_params);
             'entries' => $entries,
             'row_class' => 'cursor-pointer',
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => $massiveactionparams,
         ]);
@@ -2166,7 +2158,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => false,
         ]);
 
@@ -2234,7 +2225,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => false,
         ]);
     }
@@ -2928,7 +2918,7 @@ TWIG, $twig_params);
         global $PLUGIN_HOOKS;
 
         if (empty($itemtype)) {
-            $itemtype = static::getType();
+            $itemtype = static::class;
         }
 
         //Aggregate all plugins criteria for this rules engine
@@ -3074,7 +3064,6 @@ TWIG, ['label' => $this->getTitle()]);
             'entries' => $entries,
             'row_class' => 'cursor-pointer',
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -3334,13 +3323,13 @@ TWIG, ['label' => $this->getTitle()]);
                         $ong[1] = self::createTabEntry(
                             RuleCriteria::getTypeName(Session::getPluralNumber()),
                             $nbcriteria,
-                            $item::getType(),
+                            $item::class,
                             RuleCriteria::getIcon()
                         );
                         $ong[2] = self::createTabEntry(
                             RuleAction::getTypeName(Session::getPluralNumber()),
                             $nbaction,
-                            $item::getType(),
+                            $item::class,
                             RuleAction::getIcon()
                         );
                         return $ong;
@@ -3539,7 +3528,7 @@ TWIG, ['label' => $this->getTitle()]);
             );
         }
         foreach ($xml->xpath($xpath) as $rulexml) {
-            if ((string) $rulexml->sub_type !== self::getType()) {
+            if ((string) $rulexml->sub_type !== static::class) {
                 trigger_error(
                     sprintf(
                         'Unexpected rule type %s for rule `%s`.',
@@ -3575,7 +3564,7 @@ TWIG, ['label' => $this->getTitle()]);
 
             $rule_input = [
                 'entities_id'  => 0, // Always add default rules to root entity
-                'sub_type'     => self::getType(),
+                'sub_type'     => static::class,
                 'ranking'      => (int) $rulexml->ranking + $ranking_increment,
                 'name'         => (string) $rulexml->name,
                 'description'  => (string) $rulexml->description,

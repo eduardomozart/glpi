@@ -49,12 +49,12 @@ class Budget extends CommonDropdown
     use Clonable;
 
     // From CommonDBTM
-    public $dohistory           = true;
+    public bool $dohistory           = true;
 
-    public static $rightname           = 'budget';
-    protected $usenotepad       = true;
+    public static string $rightname           = 'budget';
+    protected bool $usenotepad       = true;
 
-    public $can_be_translated = false;
+    public bool $can_be_translated = false;
 
     public function getCloneRelations(): array
     {
@@ -99,10 +99,14 @@ class Budget extends CommonDropdown
     {
 
         if (!$withtemplate) {
-            switch ($item->getType()) {
+            switch ($item::class) {
                 case self::class:
+                    $count = 0;
+                    if ($_SESSION['glpishow_count_on_tabs']) {
+                        $count = self::countForBudget($item);
+                    }
                     return [1 => self::createTabEntry(__('Main')),
-                        2 => self::createTabEntry(_n('Item', 'Items', Session::getPluralNumber()), 0, $item::getType(), 'ti ti-package'),
+                        2 => self::createTabEntry(_n('Item', 'Items', Session::getPluralNumber()), $count, $item::getType(), 'ti ti-package'),
                     ];
             }
         }
@@ -268,6 +272,20 @@ class Budget extends CommonDropdown
         $tab = array_merge($tab, Notepad::rawSearchOptionsToAdd());
 
         return $tab;
+    }
+
+    public static function countForBudget(Budget $item): int
+    {
+        /** @var DBmysql $DB */
+        global $DB;
+
+        $count_criteria = [
+            'FROM'  => $item->getItemListCriteria(),
+            'COUNT' => 'cpt',
+        ];
+
+        $result = $DB->request($count_criteria)->current();
+        return (int) ($result['cpt'] ?? 0);
     }
 
     /**
@@ -522,7 +540,6 @@ class Budget extends CommonDropdown
             ],
             'entries' => $entries,
             'total_number' => $total_count,
-            'filtered_number' => $total_count,
             'showmassiveactions' => false,
         ]);
 
@@ -645,7 +662,6 @@ class Budget extends CommonDropdown
             ],
             'footer_class' => 'fw-bold',
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => false,
         ]);
 

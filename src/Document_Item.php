@@ -44,13 +44,13 @@ use Glpi\DBAL\QueryExpression;
 class Document_Item extends CommonDBRelation
 {
     // From CommonDBRelation
-    public static $itemtype_1 = Document::class;
-    public static $items_id_1    = 'documents_id';
-    public static $take_entity_1 = true;
+    public static ?string $itemtype_1 = Document::class;
+    public static ?string $items_id_1    = 'documents_id';
+    public static bool $take_entity_1 = true;
 
-    public static $itemtype_2    = 'itemtype';
-    public static $items_id_2    = 'items_id';
-    public static $take_entity_2 = false;
+    public static ?string $itemtype_2    = 'itemtype';
+    public static ?string $items_id_2    = 'items_id';
+    public static bool $take_entity_2 = false;
 
     public static function getTypeName($nb = 0)
     {
@@ -293,7 +293,6 @@ class Document_Item extends CommonDBRelation
                     Document::canView()
                     || ($item::class === Ticket::class)
                     || ($item::class === Reminder::class)
-                    || ($item::class === KnowbaseItem::class)
                 ) {
                     if ($_SESSION['glpishow_count_on_tabs']) {
                         $nbitem = self::countForItem($item);
@@ -473,7 +472,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -504,7 +502,6 @@ TWIG, $twig_params);
 
         if (
             ($item::class !== Ticket::class)
-            && ($item::class !== KnowbaseItem::class)
             && ($item::class !== Reminder::class)
             && !Document::canView()
         ) {
@@ -725,7 +722,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit && $withtemplate < 2,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -808,12 +804,12 @@ TWIG, $twig_params);
 
         foreach ($ids as $id) {
             if (!$item->getFromDB($id)) {
-                $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                 continue;
             }
             $doc_id = (int) $item->fields['documents_id'];
             $_SESSION['glpitransfer_list'][Document::class][$doc_id] = $doc_id;
-            $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
+            $ma->itemDone($item::class, $id, MassiveAction::ACTION_OK);
         }
 
         $ma->setRedirect($CFG_GLPI['root_doc'] . '/front/transfer.action.php');

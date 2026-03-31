@@ -51,12 +51,12 @@ use Session;
 
 final class Asset_PeripheralAsset extends CommonDBRelation
 {
-    public static $itemtype_1          = 'itemtype_asset';
-    public static $items_id_1          = 'items_id_asset';
+    public static ?string $itemtype_1          = 'itemtype_asset';
+    public static ?string $items_id_1          = 'items_id_asset';
 
-    public static $itemtype_2          = 'itemtype_peripheral';
-    public static $items_id_2          = 'items_id_peripheral';
-    public static $checkItem_2_Rights  = self::HAVE_VIEW_RIGHT_ON_ITEM;
+    public static ?string $itemtype_2          = 'itemtype_peripheral';
+    public static ?string $items_id_2          = 'items_id_peripheral';
+    public static int $checkItem_2_Rights  = self::HAVE_VIEW_RIGHT_ON_ITEM;
 
 
     public function getForbiddenStandardMassiveAction()
@@ -421,7 +421,6 @@ final class Asset_PeripheralAsset extends CommonDBRelation
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -562,7 +561,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -608,7 +606,7 @@ TWIG, $twig_params);
             'FROM'   => self::getTable(),
             'WHERE'  => [
                 'items_id_peripheral' => $item->getID(),
-                'itemtype_peripheral' => $item->getType(),
+                'itemtype_peripheral' => $item::class,
             ],
         ]);
 
@@ -753,7 +751,7 @@ TWIG, $twig_params);
                 ],
                 'FROM' => self::getTable(),
                 'WHERE' => [
-                    'itemtype_asset' => $item->getType(),
+                    'itemtype_asset' => $item::class,
                     'items_id_asset' => $item->getID(),
                 ],
                 'GROUP' => 'itemtype_peripheral',
@@ -790,7 +788,7 @@ TWIG, $twig_params);
                 ],
                 'FROM'   => self::getTable(),
                 'WHERE'  => [
-                    'itemtype_peripheral' => $item->getType(),
+                    'itemtype_peripheral' => $item::class,
                     'items_id_peripheral' => $item->fields['id'],
                 ],
                 'GROUP'  => 'itemtype_peripheral',

@@ -46,11 +46,11 @@ use Glpi\DBAL\QueryFunction;
 class ProjectTask_Ticket extends CommonDBRelation
 {
     // From CommonDBRelation
-    public static $itemtype_1 = ProjectTask::class;
-    public static $items_id_1   = 'projecttasks_id';
+    public static ?string $itemtype_1 = ProjectTask::class;
+    public static ?string $items_id_1   = 'projecttasks_id';
 
-    public static $itemtype_2 = Ticket::class;
-    public static $items_id_2   = 'tickets_id';
+    public static ?string $itemtype_2 = Ticket::class;
+    public static ?string $items_id_2   = 'tickets_id';
 
     public function getForbiddenStandardMassiveAction()
     {
@@ -208,6 +208,11 @@ class ProjectTask_Ticket extends CommonDBRelation
             $t['item_id'] = $t['id'];
             return $t;
         }, $tickets));
+        $entries = array_map(static function ($entry) {
+            $entry['itemtype'] = self::class;
+            $entry['id'] = $entry['linkid'];
+            return $entry;
+        }, $entries);
 
         TemplateRenderer::getInstance()->display('components/datatable.html.twig', [
             'is_tab' => true,
@@ -217,7 +222,6 @@ class ProjectTask_Ticket extends CommonDBRelation
             'formatters' => $formatters,
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -455,7 +459,6 @@ class ProjectTask_Ticket extends CommonDBRelation
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),

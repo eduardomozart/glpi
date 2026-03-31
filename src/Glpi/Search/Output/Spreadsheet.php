@@ -53,9 +53,8 @@ abstract class Spreadsheet extends ExportSearchOutput
     protected BaseWriter|IWriter $writer;
     /**
      * FIXME: remove in GLPI 12, seems not used
-     * @var int
      */
-    protected $count;
+    protected int $count;
 
     public function __construct()
     {
@@ -232,7 +231,7 @@ abstract class Spreadsheet extends ExportSearchOutput
                         $this->getTitle($newdata)
                     );
                 } else {
-                    if ((string) $criteria['value'] !== '') {
+                    if (((string) $criteria['value']) !== '') {
                         if (isset($criteria['link'])) {
                             $titlecontain = " " . $criteria['link'] . " ";
                         }
@@ -372,7 +371,7 @@ abstract class Spreadsheet extends ExportSearchOutput
                 }
 
                 $titlecontain2 = '';
-                if ((string) $metacriteria['value'] !== '') {
+                if (((string) $metacriteria['value']) !== '') {
                     if (isset($metacriteria['link'])) {
                         $titlecontain2 = sprintf(
                             __('%1$s %2$s'),

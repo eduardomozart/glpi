@@ -109,13 +109,22 @@ export class GlpiPage
         const simple_dropdown = this.page
             .getByRole('listbox')
             .getByRole('option', {'name': value, exact: exact})
+            .first()
+        ;
+        const simple_dropdown_with_prefix = this.page
+            .getByRole('listbox')
+            .getByRole('option', {'name': `»${value}`, exact: exact})
         ;
         const dropdown_with_groups = this.page
             .getByRole('listbox')
             .getByRole('listitem', {'name': value, exact: exact})
         ;
 
-        await simple_dropdown.or(dropdown_with_groups).click();
+        await simple_dropdown
+            .or(simple_dropdown_with_prefix)
+            .or(dropdown_with_groups)
+            .click()
+        ;
         await expect(dropdown).toContainText(value);
     }
 
@@ -138,7 +147,7 @@ export class GlpiPage
         ;
 
         await simple_dropdown.or(dropdown_with_groups).click();
-        
+
         if (check_value) {
             await expect(dropdown).toContainText(value);
         }
@@ -160,7 +169,7 @@ export class GlpiPage
     public async doLogout(): Promise<void>
     {
         await this.user_menu.click();
-        await this.logout_link.click();
+        await this.page.goto('/front/logout.php');
     }
 
     public async doChangeProfile(profile: string): Promise<void>
@@ -433,6 +442,16 @@ export class GlpiPage
             .filter({
                 visible: true,
                 hasText: title,
+            })
+        ;
+    }
+
+    public getDialog(text: string): Locator
+    {
+        return this.page.getByRole('dialog')
+            .filter({
+                visible: true,
+                hasText: text,
             })
         ;
     }

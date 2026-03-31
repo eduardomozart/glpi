@@ -43,11 +43,11 @@ use Glpi\Application\View\TemplateRenderer;
 class Change_Ticket extends CommonITILObject_CommonITILObject
 {
     // From CommonDBRelation
-    public static $itemtype_1 = Change::class;
-    public static $items_id_1   = 'changes_id';
+    public static ?string $itemtype_1 = Change::class;
+    public static ?string $items_id_1   = 'changes_id';
 
-    public static $itemtype_2 = Ticket::class;
-    public static $items_id_2   = 'tickets_id';
+    public static ?string $itemtype_2 = Ticket::class;
+    public static ?string $items_id_2   = 'tickets_id';
 
 
     public static function getTypeName($nb = 0)
@@ -288,7 +288,6 @@ class Change_Ticket extends CommonITILObject_CommonITILObject
             'formatters' => $formatters,
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -391,7 +390,6 @@ class Change_Ticket extends CommonITILObject_CommonITILObject
             'formatters' => $formatters,
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),

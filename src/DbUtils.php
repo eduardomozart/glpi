@@ -641,13 +641,11 @@ final class DbUtils
      * @param string|array<mixed, mixed> $condition filtering criteria
      *
      * @return int Number of elements in table
-     *
-     * @TODO This method is not used, deprecate it in GLPI 11.1.
+     * @deprecated 12.0.0
      */
     public function countElementsInTableForMyEntities($table, $condition = [])
     {
-
-        /// TODO clean it / maybe include when review of SQL requests
+        Toolbox::deprecated();
         $item = $this->getItemForTable($table);
 
         $criteria = $this->getEntitiesRestrictCriteria($table, '', '', $item->maybeRecursive());
@@ -796,8 +794,7 @@ final class DbUtils
      *                                        when have acces to all entities (used for reminders)
      *
      * @return string the WHERE clause to restrict
-     *
-     * @TODO Deprecate this method in GLPI 11.1, usages should be replaced by `getEntitiesRestrictCriteria()`.
+     * @TODO Deprecate this method in GLPI 12.0, usages should be replaced by `getEntitiesRestrictCriteria()`.
      */
     public function getEntitiesRestrictRequest(
         $separator = "AND",
@@ -1299,13 +1296,17 @@ final class DbUtils
      * @return ($withcomment is true ? array{name: string, comment: string} : string)
      *
      * @see DbUtils::getTreeValueCompleteName
-     *
-     * @TODO Deprecate the `$withcomment` parameter, it is never used.
-     * @TODO Deprecate the `$translate` parameter, it is never used.
      */
     public function getTreeLeafValueName($table, $ID, $withcomment = false, $translate = true)
     {
         global $DB;
+
+        if ($withcomment) {
+            Toolbox::deprecated('Usage of the `$withcomment` parameter is deprecated.');
+        }
+        if (!(bool) $translate) {
+            Toolbox::deprecated('Usage of the `$translate` parameter is deprecated.');
+        }
 
         $name    = "";
         $comment = "";
@@ -1314,8 +1315,8 @@ final class DbUtils
         $SELECTCOMMENT = new QueryExpression("'' AS " . $DB->quoteName('transcomment'));
         $JOIN          = [];
         $JOINS         = [];
-        if ($translate) {
-            if (Session::haveTranslations($this->getItemTypeForTable($table), 'name')) {
+        if ($translate && $transitemtype = $this->getItemTypeForTable($table)) {
+            if (Session::haveTranslations($transitemtype, 'name')) {
                 $SELECTNAME = 'namet.value AS transname';
                 $JOINS['glpi_dropdowntranslations AS namet'] = [
                     'ON' => [
@@ -1330,7 +1331,8 @@ final class DbUtils
                     ],
                 ];
             }
-            if (Session::haveTranslations($this->getItemTypeForTable($table), 'comment')) {
+            $transitemtype = $this->getItemTypeForTable($table);
+            if ($transitemtype && Session::haveTranslations($transitemtype, 'comment')) {
                 $SELECTCOMMENT = 'namec.value AS transcomment';
                 $JOINS['glpi_dropdowntranslations AS namec'] = [
                     'ON' => [
@@ -1420,8 +1422,8 @@ final class DbUtils
         $SELECTNAME    = new QueryExpression("'' AS " . $DB->quoteName('transname'));
         $JOIN          = [];
         $JOINS         = [];
-        if ($translate) {
-            if (Session::haveTranslations($this->getItemTypeForTable($table), 'completename')) {
+        if ($translate && $transitemtype = $this->getItemTypeForTable($table)) {
+            if (Session::haveTranslations($transitemtype, 'completename')) {
                 $SELECTNAME = 'namet.value AS transname';
                 $JOINS['glpi_dropdowntranslations AS namet'] = [
                     'ON' => [
@@ -1511,13 +1513,13 @@ final class DbUtils
      * @param int     $level     current level of recursion (default 0)
      *
      * @return array{0: string, 1:int}
-     *
-     * @TODO This method is not used, deprecate it in GLPI 11.1.
+     * @deprecated 12.0.0
      */
     public function getTreeValueName($table, $ID, $wholename = "", $level = 0)
     {
         global $DB;
 
+        Toolbox::deprecated();
         $parentIDfield = $this->getForeignKeyFieldForTable($table);
 
         $iterator = $DB->request([
@@ -1551,13 +1553,13 @@ final class DbUtils
      * @param int     $IDf   The ID of the father
      *
      * @return array<int, array{name: string, tree: array<int, mixed>}> Recursive tree
-     *
-     * @TODO This method is not used, deprecate it in GLPI 11.1.
+     * @deprecated 12.0.0
      */
     public function getTreeForItem($table, $IDf)
     {
         global $DB;
 
+        Toolbox::deprecated();
         $parentIDfield = $this->getForeignKeyFieldForTable($table);
 
         // IDs to be present in the final array
@@ -1615,12 +1617,11 @@ final class DbUtils
      * @param int                                           $root root of the tree
      *
      * @return array<int, array{name: string, tree: array<int, mixed>}> Recursive tree
-     *
-     * @TODO This method is not used, deprecate it in GLPI 11.1.
+     * @deprecated 12.0.0
      */
     public function constructTreeFromList($list, $root)
     {
-
+        Toolbox::deprecated();
         $tree = [];
         foreach ($list as $ID => $data) {
             if ($data['parent'] == $root) {
@@ -1639,11 +1640,11 @@ final class DbUtils
      * @param int                                        $parent root of the tree
      *
      * @return array<int, int> list of items in the tree
-     *
-     * @TODO This method is not used, deprecate it in GLPI 11.1.
+     * @deprecated 12.0.0
      */
     public function constructListFromTree($tree, $parent = 0)
     {
+        Toolbox::deprecated();
         $list = [];
         foreach ($tree as $root => $data) {
             $list[$root] = $parent;
@@ -1701,10 +1702,10 @@ final class DbUtils
             $id_visible = $_SESSION["glpiis_ids_visible"];
         }
 
-        if ((string) $realname !== '') {
+        if (((string) $realname) !== '') {
             $formatted = (string) $realname;
 
-            if ((string) ($firstname ?? '') !== '') {
+            if (((string) $firstname) !== '') {
                 if ($order == User::FIRSTNAME_BEFORE) {
                     $formatted = $firstname . " " . $formatted;
                 } else {
@@ -2088,11 +2089,11 @@ final class DbUtils
      * @param string $time datetime time
      *
      * @return string
-     *
-     * @TODO This method is not used, deprecate it in GLPI 11.1.
+     * @deprecated 12.0.0
      */
     public function getHourFromSql($time)
     {
+        Toolbox::deprecated();
         $t = explode(" ", $time);
         $p = explode(":", $t[1]);
         return $p[0] . ":" . $p[1];

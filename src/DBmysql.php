@@ -83,16 +83,15 @@ class DBmysql
 
     /**
      * The database handler
-     * @var mysqli
      */
-    protected $dbh;
+    protected mysqli $dbh;
 
     /**
-     * Slave management
+     * Replica management
      *
      * @var bool
      */
-    public $slave              = false;
+    public $replica            = false;
 
     /**
      * Defines if connection must use SSL.
@@ -104,24 +103,24 @@ class DBmysql
     /**
      * The path name to the key file (used in case of SSL connection).
      *
+     * @var string
      * @see mysqli::ssl_set()
-     * @var string|null
      */
     public $dbsslkey           = null;
 
     /**
      * The path name to the certificate file (used in case of SSL connection).
      *
+     * @var string
      * @see mysqli::ssl_set()
-     * @var string|null
      */
     public $dbsslcert          = null;
 
     /**
      * The path name to the certificate authority file (used in case of SSL connection).
      *
+     * @var string
      * @see mysqli::ssl_set()
-     * @var string|null
      */
     public $dbsslca            = null;
 
@@ -129,16 +128,16 @@ class DBmysql
      * The pathname to a directory that contains trusted SSL CA certificates in PEM format
      * (used in case of SSL connection).
      *
+     * @var string
      * @see mysqli::ssl_set()
-     * @var string|null
      */
     public $dbsslcapath        = null;
 
     /**
      * A list of allowable ciphers to use for SSL encryption (used in case of SSL connection).
      *
+     * @var string
      * @see mysqli::ssl_set()
-     * @var string|null
      */
     public $dbsslcacipher      = null;
 
@@ -189,14 +188,12 @@ class DBmysql
      *
      * @var bool
      */
-    public $first_connection   = true;
+    public bool $first_connection   = true;
     // Is connected to the DB ?
-    /** @var bool */
-    public $connected          = false;
+    public bool $connected          = false;
 
     //to calculate execution time
-    /** @var bool|float */
-    public $execution_time          = false;
+    public bool|float $execution_time          = false;
 
     private bool $cache_disabled = false;
 
@@ -207,18 +204,16 @@ class DBmysql
     /**
      * Cached list fo tables.
      *
-     * @var array
      * @see self::tableExists()
      */
-    private $table_cache = [];
+    private array $table_cache = [];
 
     /**
      * Cached list of fields.
      *
-     * @var array
      * @see self::listFields()
      */
-    private $field_cache = [];
+    private array $field_cache = [];
 
     private int $transaction_level = 0;
 
@@ -377,20 +372,6 @@ class DBmysql
     /**
      * Execute a MySQL query
      *
-     * @param string $query Query to execute
-     *
-     * @return mysqli_result|bool Query result handler
-     *
-     * @deprecated 10.0.11
-     */
-    public function query($query)
-    {
-        throw new Exception('Executing direct queries is not allowed!');
-    }
-
-    /**
-     * Execute a MySQL query
-     *
      * @phpstan-impure Results will depend on database content.
      *
      * @param string $query Query to execute
@@ -465,41 +446,6 @@ class DBmysql
             $this->execution_time = $duration;
         }
         return $res;
-    }
-
-    /**
-     * Execute a MySQL query and throw an exception
-     * (optionally with a message) if it fails
-     *
-     * @since 0.84
-     *
-     * @param string $query   Query to execute
-     * @param string $message Explanation of query (default '')
-     *
-     * @return mysqli_result Query result handler
-     *
-     * @deprecated 10.0.11
-     */
-    public function queryOrDie($query, $message = '')
-    {
-        throw new Exception('Executing direct queries is not allowed!');
-    }
-
-    /**
-     * Execute a MySQL query and throw an exception if it fails.
-     *
-     * @param string $query   Query to execute
-     * @param string $message Explanation of query (default '')
-     *
-     * @return mysqli_result|true Returns true for add/delete/update; and mysqli_result for select
-     *
-     * @deprecated 11.0.0
-     */
-    public function doQueryOrDie($query, $message = '')
-    {
-        Toolbox::deprecated('Use `DBmysql::doQuery()`.');
-
-        return $this->doQuery($query);
     }
 
     /**
@@ -1016,20 +962,36 @@ class DBmysql
      */
     public function close()
     {
-        if ($this->connected && $this->dbh) {
+        if ($this->connected && isset($this->dbh)) {
             return $this->dbh->close();
         }
         return false;
     }
 
     /**
-     * is a slave database ?
+     * is a replica database?
      *
      * @return bool
      */
+    public function isReplica(): bool
+    {
+        //To remove in v13
+        if (property_exists($this, 'slave')) {
+            return $this->isSlave(); //@phpstan-ignore method.deprecated
+        }
+        return $this->replica;
+    }
+
+    /**
+     * is a slave database ?
+     *
+     * @return bool
+     * @deprecated 12 Use $this->isReplica instead.
+     */
     public function isSlave()
     {
-        return $this->slave;
+        Toolbox::deprecated('Use isReplica()');
+        return $this->slave ?? false;
     }
 
     /**
@@ -1381,26 +1343,6 @@ class DBmysql
     }
 
     /**
-     * Insert a row in the database and throw an exception if it fails.
-     *
-     * @since 9.3
-     *
-     * @param string $table  Table name
-     * @param array  $params  Query parameters ([field name => field value)
-     * @param string $message Explanation of query (default '')
-     *
-     * @return mysqli_result|bool Query result handler
-     *
-     * @deprecated 11.0.0
-     */
-    public function insertOrDie($table, $params, $message = '')
-    {
-        Toolbox::deprecated('Use `DBmysql::insert()`.');
-
-        return $this->insert($table, $params);
-    }
-
-    /**
      * Builds an update statement
      *
      * @since 9.3
@@ -1498,29 +1440,6 @@ class DBmysql
     }
 
     /**
-     * Update a row in the database and throw an exception if it fails.
-     *
-     * @since 9.3
-     *
-     * @param string $table   Table name
-     * @param array  $params  Query parameters ([:field name => field value)
-     * @param array  $where   WHERE clause
-     * @param string $message Explanation of query (default '')
-     * @param array  $joins   JOINS criteria array
-     *
-     * @since 9.4.0 $joins parameter added
-     * @return mysqli_result|bool Query result handler
-     *
-     * @deprecated 11.0.0
-     */
-    public function updateOrDie($table, $params, $where, $message = '', array $joins = [])
-    {
-        Toolbox::deprecated('Use `DBmysql::update()`.');
-
-        return $this->update($table, $params, $where, $joins);
-    }
-
-    /**
      * Update a row in the database or insert a new one
      *
      * @since 9.4
@@ -1605,67 +1524,6 @@ class DBmysql
         $query = $this->buildDelete($table, $where, $joins);
         $this->doQuery($query);
         return true;
-    }
-
-    /**
-     * Delete a row in the database and throw an exception if it fails.
-     *
-     * @since 9.3
-     *
-     * @param string $table   Table name
-     * @param array  $where   WHERE clause
-     * @param string $message Explanation of query (default '')
-     * @param array  $joins   JOINS criteria array
-     *
-     * @since 9.4.0 $joins parameter added
-     * @return mysqli_result|bool Query result handler
-     *
-     * @deprecated 11.0.0
-     */
-    public function deleteOrDie($table, $where, $message = '', array $joins = [])
-    {
-        Toolbox::deprecated('Use `DBmysql::delete()`.');
-
-        return $this->delete($table, $where, $joins);
-    }
-
-
-    /**
-     * Truncate table in the database
-     *
-     * @since 10.0.0
-     *
-     * @param string $table Table name
-     *
-     * @return mysqli_result|bool Query result handler
-     *
-     * @deprecated 11.0.0
-     */
-    public function truncate($table)
-    {
-        Toolbox::deprecated();
-        // Use delete to prevent table corruption on some MySQL operations
-        // (i.e. when using mysqldump without `--single-transaction` option)
-        return $this->delete($table, [1]);
-    }
-
-    /**
-     * Truncate table in the database or throw an exception
-     * (optionally with a message) if it fails
-     *
-     * @since 10.0.0
-     *
-     * @param string $table   Table name
-     * @param string $message Explanation of query (default '')
-     *
-     * @return mysqli_result|bool Query result handler
-     *
-     * @deprecated 11.0.0
-     */
-    public function truncateOrDie($table, $message = '')
-    {
-        Toolbox::deprecated();
-        return $this->deleteOrDie($table, [1], $message);
     }
 
     /**
@@ -2086,7 +1944,7 @@ class DBmysql
                 $excludes[] = 3778; // 'utf8_unicode_ci' is a collation of the deprecated character set UTF8MB3. Please consider using UTF8MB4 with an appropriate collation instead.
             }
             if (!$this->log_deprecation_warnings) {
-                // Mute deprecations related to elements that are heavilly used in old migrations and in plugins
+                // Mute deprecations related to elements that are heavily used in old migrations and in plugins
                 // as it may require a lot of work to fix them.
                 $excludes[] = 1681; // Integer display width is deprecated and will be removed in a future release.
             }

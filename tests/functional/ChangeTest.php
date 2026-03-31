@@ -497,7 +497,7 @@ class ChangeTest extends DbTestCase
 
         yield [
             'profilerights' => [
-                'followup' => \ITILFollowup::ADDMYTICKET,
+                'followup' => \ITILFollowup::ADDMY,
                 'change'   => 0,
                 'document' => 0,
             ],
@@ -524,7 +524,7 @@ class ChangeTest extends DbTestCase
 
         yield [
             'profilerights' => [
-                'followup' => \ITILFollowup::ADDMYTICKET,
+                'followup' => \ITILFollowup::ADDMY,
                 'change'   => UPDATE,
                 'document' => 0,
             ],
@@ -533,7 +533,7 @@ class ChangeTest extends DbTestCase
 
         yield [
             'profilerights' => [
-                'followup' => \ITILFollowup::ADDMYTICKET,
+                'followup' => \ITILFollowup::ADDMY,
                 'change'   => 0,
                 'document' => CREATE,
             ],

@@ -75,8 +75,8 @@ class User extends CommonDBTM implements TreeBrowseInterface
     use TreeBrowse;
 
     // From CommonDBTM
-    public $dohistory         = true;
-    public $history_blacklist = ['date_mod', 'date_sync', 'last_login',
+    public bool $dohistory         = true;
+    public array $history_blacklist = ['date_mod', 'date_sync', 'last_login',
         'publicbookmarkorder', 'privatebookmarkorder',
     ];
 
@@ -91,9 +91,9 @@ class User extends CommonDBTM implements TreeBrowseInterface
     public const UPDATEAUTHENT       = 4096;
     public const IMPERSONATE         = 8192;
 
-    public static $rightname = 'user';
+    public static string $rightname = 'user';
 
-    public static $undisclosedFields = [
+    public static array $undisclosedFields = [
         'password',
         'password_history',
         'personal_token',
@@ -342,9 +342,13 @@ class User extends CommonDBTM implements TreeBrowseInterface
      * @return void
      *
      * @since 0.83.7
+     *
+     * @deprecated 12.0.0
      */
     public function loadMinimalSession($entities_id, $is_recursive)
     {
+        Toolbox::deprecated();
+
         if (isset($this->fields['id']) && !isset($_SESSION["glpiID"])) {
             Session::destroy();
             Session::start();
@@ -364,14 +368,14 @@ class User extends CommonDBTM implements TreeBrowseInterface
         switch ($item::class) {
             case self::class:
                 $ong    = [];
-                $ong[1] = self::createTabEntry(__('Used items'), 0, $item::getType(), 'ti ti-package');
-                $ong[2] = self::createTabEntry(__('Managed items'), 0, $item::getType(), 'ti ti-package');
+                $ong[1] = self::createTabEntry(__('Used items'), 0, $item::class, 'ti ti-package');
+                $ong[2] = self::createTabEntry(__('Managed items'), 0, $item::class, 'ti ti-package');
 
                 if (
                     $item->fields['authtype'] === Auth::LDAP
                     && Session::haveRight(self::$rightname, self::READAUTHENT)
                 ) {
-                    $ong[3] = self::createTabEntry(__('LDAP information'), 0, $item::getType(), AuthLDAP::getIcon());
+                    $ong[3] = self::createTabEntry(__('LDAP information'), 0, $item::class, AuthLDAP::getIcon());
                 }
                 $ong[4] = self::createTabEntry(__('Security'), 0, $item::class, 'ti ti-shield-lock');
                 return $ong;
@@ -582,7 +586,7 @@ class User extends CommonDBTM implements TreeBrowseInterface
 
         // Alert does not extends CommonDBConnexity
         $alert = new Alert();
-        $alert->cleanDBonItemDelete($this->getType(), $this->fields['id']);
+        $alert->cleanDBonItemDelete(static::class, $this->fields['id']);
     }
 
 
@@ -1429,7 +1433,7 @@ class User extends CommonDBTM implements TreeBrowseInterface
             $alert = new Alert();
             $alert->deleteByCriteria(
                 [
-                    'itemtype' => $this->getType(),
+                    'itemtype' => static::class,
                     'items_id' => $this->fields['id'],
                 ],
                 true
@@ -2334,7 +2338,7 @@ class User extends CommonDBTM implements TreeBrowseInterface
             }
 
             ///Only process rules if working on the master database
-            if (!$DB->isSlave()) {
+            if (!$DB->isReplica()) {
                 //Instanciate the affectation's rule
                 $rule = new RuleRightCollection();
 
@@ -2560,7 +2564,7 @@ class User extends CommonDBTM implements TreeBrowseInterface
         // force authtype as we retrieve this user by imap (we could have login with SSO)
         $this->fields["authtype"] = Auth::MAIL;
 
-        if (!$DB->isSlave()) {
+        if (!$DB->isReplica()) {
             //Instanciate the affectation's rule
             $rule = new RuleRightCollection();
 
@@ -2669,7 +2673,7 @@ class User extends CommonDBTM implements TreeBrowseInterface
             }
         }
         ///Only process rules if working on the master database
-        if (!$DB->isSlave()) {
+        if (!$DB->isReplica()) {
             //Instanciate the affectation's rule
             $rule = new RuleRightCollection();
 
@@ -3118,17 +3122,17 @@ HTML;
                             )
                         ) {
                             if (AuthLDAP::forceOneUserSynchronization($item, ($ma->getAction() == 'clean_ldap_fields'), false)) {
-                                $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
+                                $ma->itemDone($item::class, $id, MassiveAction::ACTION_OK);
                             } else {
-                                $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                                $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                                 $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION));
                             }
                         } else {
-                            $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                            $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                             $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION));
                         }
                     } else {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_NORIGHT);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_NORIGHT);
                         $ma->addMessage($item->getErrorMessage(ERROR_RIGHT));
                     }
                 }
@@ -3140,18 +3144,18 @@ HTML;
                     !isset($input["authtype"])
                     || !isset($input["auths_id"])
                 ) {
-                    $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_KO);
+                    $ma->itemDone($item::class, $ids, MassiveAction::ACTION_KO);
                     $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION));
                     return;
                 }
                 if (Session::haveRight(self::$rightname, self::UPDATEAUTHENT)) {
                     if (User::changeAuthMethod($ids, $input["authtype"], $input["auths_id"])) {
-                        $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_OK);
+                        $ma->itemDone($item::class, $ids, MassiveAction::ACTION_OK);
                     } else {
-                        $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_KO);
+                        $ma->itemDone($item::class, $ids, MassiveAction::ACTION_KO);
                     }
                 } else {
-                    $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_NORIGHT);
+                    $ma->itemDone($item::class, $ids, MassiveAction::ACTION_NORIGHT);
                     $ma->addMessage($item->getErrorMessage(ERROR_RIGHT));
                 }
                 return;
@@ -3160,7 +3164,7 @@ HTML;
                 foreach ($ids as $id) {
                     // Check rights
                     if (!$item->can($id, UPDATE)) {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_NORIGHT);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_NORIGHT);
                         $ma->addMessage($item->getErrorMessage(ERROR_RIGHT));
                         continue;
                     }
@@ -3174,7 +3178,7 @@ HTML;
                             $status = MassiveAction::ACTION_KO;
                         }
                     }
-                    $ma->itemDone($item->getType(), $id, $status);
+                    $ma->itemDone($item::class, $id, $status);
                 }
                 return;
 
@@ -3183,12 +3187,12 @@ HTML;
                 $totp = new TOTPManager();
                 foreach ($ids as $id) {
                     if (!$can_update_auth || !$item->can($id, UPDATE)) {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_NORIGHT);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_NORIGHT);
                         $ma->addMessage($item->getErrorMessage(ERROR_RIGHT));
                         continue;
                     }
                     $totp->disable2FAForUser($id);
-                    $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
+                    $ma->itemDone($item::class, $id, MassiveAction::ACTION_OK);
                 }
                 break;
             case 'send_pw_reset':
@@ -3572,6 +3576,7 @@ HTML;
             'forcegroupby'       => true,
             'usehaving'          => true,
             'datatype'           => 'count',
+            'use_join_subquery'  => true,
             'massiveaction'      => false,
             'joinparams'         => [
                 'beforejoin'         => [
@@ -3592,6 +3597,7 @@ HTML;
             'forcegroupby'       => true,
             'usehaving'          => true,
             'datatype'           => 'count',
+            'use_join_subquery'  => true,
             'massiveaction'      => false,
             'joinparams'         => [
                 'jointype'           => 'child',
@@ -3607,6 +3613,7 @@ HTML;
             'forcegroupby'       => true,
             'usehaving'          => true,
             'datatype'           => 'count',
+            'use_join_subquery'  => true,
             'massiveaction'      => false,
             'joinparams'         => [
                 'beforejoin'         => [
@@ -4122,7 +4129,7 @@ HTML;
         }
 
         if (!$count) {
-            if ((string) $search !== '') {
+            if (((string) $search) !== '') {
                 $txt_search = Search::makeTextSearchValue($search);
 
                 $firstname_field = self::getTableField('firstname');
@@ -4411,7 +4418,7 @@ HTML;
 
             $paramscomment = [
                 'value'    => '__VALUE__',
-                'itemtype' => User::getType(),
+                'itemtype' => User::class,
             ];
 
             if ($view_users) {
@@ -4788,7 +4795,6 @@ HTML;
             ],
             'entries'               => $entries,
             'total_number'          => $number,
-            'filtered_number'       => $number,
             'showmassiveactions'    => true,
             'massiveactionparams'   => [
                 'num_displayed'    => min($_SESSION['glpilist_limit'], $number),
@@ -5888,7 +5894,7 @@ HTML;
                             self::getTable()  => 'id',
                             [
                                 'AND' => [
-                                    Alert::getTableField('itemtype') => self::getType(),
+                                    Alert::getTableField('itemtype') => static::class,
                                 ],
                             ],
                         ],

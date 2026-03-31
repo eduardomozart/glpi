@@ -44,13 +44,10 @@ use Glpi\RichText\RichText;
  **/
 class KnowbaseItemTranslation extends CommonDBChild
 {
-    public static $itemtype = KnowbaseItem::class;
-    public static $items_id = 'knowbaseitems_id';
-    public $dohistory       = true;
-    public static $logs_for_parent = false;
-
-    public static $rightname       = 'knowbase';
-
+    public static string $itemtype = KnowbaseItem::class;
+    public static string $items_id = 'knowbaseitems_id';
+    public bool $dohistory       = true;
+    public static bool $logs_for_parent = false;
 
     public static function getTypeName($nb = 0)
     {
@@ -67,8 +64,6 @@ class KnowbaseItemTranslation extends CommonDBChild
         $ong = [];
         $this->addStandardTab(self::class, $ong, $options);
         $this->addStandardTab(Log::class, $ong, $options);
-        $this->addStandardTab(KnowbaseItem_Revision::class, $ong, $options);
-        $this->addStandardTab(KnowbaseItem_Comment::class, $ong, $options);
 
         return $ong;
     }
@@ -230,7 +225,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),

@@ -55,16 +55,16 @@ class Project extends CommonDBTM implements ExtraVisibilityCriteria, KanbanInter
     use Teamwork;
 
     // From CommonDBTM
-    public $dohistory                   = true;
-    protected static $forward_entity_to = ['ProjectCost', 'ProjectTask'];
-    public static $rightname                   = 'project';
-    protected $usenotepad               = true;
+    public bool $dohistory                   = true;
+    protected static array $forward_entity_to = ['ProjectCost', 'ProjectTask'];
+    public static string $rightname                   = 'project';
+    protected bool $usenotepad               = true;
 
     public const READMY                        = 1;
     public const READALL                       = 1024;
 
     /** @var array<class-string<CommonDBTM>, array<array{id: int, projects_id: int, itemtype: class-string<CommonDBTM>, items_id: int, display_name?: string}>> */
-    protected $team                     = [];
+    protected array $team                     = [];
 
     public function getCloneRelations(): array
     {
@@ -479,7 +479,7 @@ class Project extends CommonDBTM implements ExtraVisibilityCriteria, KanbanInter
     public function getTeamCount()
     {
         $nb = 0;
-        if (is_array($this->team) && count($this->team)) {
+        if (count($this->team)) {
             foreach ($this->team as $val) {
                 $nb += count($val);
             }
@@ -1355,7 +1355,6 @@ class Project extends CommonDBTM implements ExtraVisibilityCriteria, KanbanInter
             'formatters' => $header['formatters'],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -1482,7 +1481,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -1572,14 +1570,14 @@ TWIG, $twig_params);
 
             $addselect = [];
             $ljoin = [];
-            if (Session::haveTranslations(ProjectState::getType(), 'name')) {
+            if (Session::haveTranslations(ProjectState::class, 'name')) {
                 $addselect[] = "namet2.value AS transname";
                 $ljoin['glpi_dropdowntranslations AS namet2'] = [
                     'ON' => [
                         'namet2' => 'items_id',
                         ProjectState::getTable()   => 'id', [
                             'AND' => [
-                                'namet2.itemtype' => ProjectState::getType(),
+                                'namet2.itemtype' => ProjectState::class,
                                 'namet2.language' => $_SESSION['glpilanguage'],
                                 'namet2.field'    => 'name',
                             ],
@@ -2141,7 +2139,7 @@ TWIG, $twig_params);
                     'description' => _x('filters', 'A contact in the team of the item'),
                     'supported_prefixes' => ['!'],
                 ],
-            ] + self::getKanbanPluginFilters(static::getType()),
+            ] + self::getKanbanPluginFilters(static::class),
         ]);
     }
 

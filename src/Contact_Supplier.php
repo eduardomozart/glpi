@@ -39,11 +39,11 @@ use Glpi\Toolbox\URL;
 class Contact_Supplier extends CommonDBRelation
 {
     // From CommonDBRelation
-    public static $itemtype_1 = Contact::class;
-    public static $items_id_1 = 'contacts_id';
+    public static ?string $itemtype_1 = Contact::class;
+    public static ?string $items_id_1 = 'contacts_id';
 
-    public static $itemtype_2 = Supplier::class;
-    public static $items_id_2 = 'suppliers_id';
+    public static ?string $itemtype_2 = Supplier::class;
+    public static ?string $items_id_2 = 'suppliers_id';
 
 
     public static function getTypeName($nb = 0)
@@ -67,18 +67,18 @@ class Contact_Supplier extends CommonDBRelation
 
         if (!$withtemplate && Session::haveRight("contact_enterprise", READ)) {
             $nb = 0;
-            switch ($item->getType()) {
+            switch ($item::class) {
                 case 'Supplier':
                     if ($_SESSION['glpishow_count_on_tabs']) {
                         $nb =  self::countForItem($item);
                     }
-                    return self::createTabEntry(Contact::getTypeName(Session::getPluralNumber()), $nb, $item::getType());
+                    return self::createTabEntry(Contact::getTypeName(Session::getPluralNumber()), $nb, $item::class);
 
                 case 'Contact':
                     if ($_SESSION['glpishow_count_on_tabs']) {
                         $nb = self::countForItem($item);
                     }
-                    return self::createTabEntry(Supplier::getTypeName(Session::getPluralNumber()), $nb, $item::getType());
+                    return self::createTabEntry(Supplier::getTypeName(Session::getPluralNumber()), $nb, $item::class);
             }
         }
         return '';
@@ -201,7 +201,6 @@ class Contact_Supplier extends CommonDBRelation
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -301,7 +300,6 @@ class Contact_Supplier extends CommonDBRelation
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),

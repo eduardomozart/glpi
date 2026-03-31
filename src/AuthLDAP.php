@@ -80,48 +80,6 @@ class AuthLDAP extends CommonDBTM
     public const GROUP_SEARCH_GROUP   = 1;
     public const GROUP_SEARCH_BOTH    = 2;
 
-    /**
-     * Deleted user strategy: preserve user.
-     * @var int
-     * @deprecated
-     */
-    public const DELETED_USER_PRESERVE = 0;
-
-    /**
-     * Deleted user strategy: put user in trashbin.
-     * @var int
-     * @deprecated
-     */
-    public const DELETED_USER_DELETE = 1;
-
-    /**
-     * Deleted user strategy: withdraw dynamic authorizations and groups.
-     * @var int
-     * @deprecated
-     */
-    public const DELETED_USER_WITHDRAWDYNINFO = 2;
-
-    /**
-     * Deleted user strategy: disable user.
-     * @var int
-     * @deprecated
-     */
-    public const DELETED_USER_DISABLE = 3;
-
-    /**
-     * Deleted user strategy: disable user and withdraw dynamic authorizations and groups.
-     * @var int
-     * @deprecated
-     */
-    public const DELETED_USER_DISABLEANDWITHDRAWDYNINFO = 4;
-
-    /**
-     * Deleted user strategy: disable user and withdraw groups.
-     * @var int
-     * @deprecated
-     */
-    public const DELETED_USER_DISABLEANDDELETEGROUPS = 5;
-
     // Deleted user strategies for user
     public const DELETED_USER_ACTION_USER_DO_NOTHING = 0;
     public const DELETED_USER_ACTION_USER_DISABLE = 1;
@@ -171,28 +129,25 @@ class AuthLDAP extends CommonDBTM
     ];
 
     // From CommonDBTM
-    public $dohistory = true;
+    public bool $dohistory = true;
 
-    public static $rightname = 'config';
+    public static string $rightname = 'config';
 
     /**
      * connection caching stuff
-     * @var array
      */
-    public static $conn_cache = [];
+    public static array $conn_cache = [];
 
-    public static $undisclosedFields = [
+    public static array $undisclosedFields = [
         'rootdn_passwd',
     ];
 
     /**
      * Message of last error occurred during connection.
-     * @var ?string
      */
     private static ?string $last_error = null;
     /**
      * Numero of last error occurred during connection.
-     * @var ?int
      */
     private static ?int $last_errno = null;
 
@@ -415,7 +370,7 @@ class AuthLDAP extends CommonDBTM
                     !Session::haveRight("user", User::UPDATEAUTHENT)
                     || !$group->canGlobal(UPDATE)
                 ) {
-                    $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_NORIGHT);
+                    $ma->itemDone($item::class, $ids, MassiveAction::ACTION_NORIGHT);
                     $ma->addMessage($item->getErrorMessage(ERROR_RIGHT));
                     return;
                 }
@@ -437,9 +392,9 @@ class AuthLDAP extends CommonDBTM
                             'type'         => $input['ldap_import_type'][$id],
                         ];
                         if (self::ldapImportGroup($group_dn, $options)) {
-                            $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
+                            $ma->itemDone($item::class, $id, MassiveAction::ACTION_OK);
                         } else {
-                            $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                            $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                             $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION, htmlescape($group_dn)));
                         }
                     }
@@ -451,7 +406,7 @@ class AuthLDAP extends CommonDBTM
             case 'import':
             case 'sync':
                 if (!Session::haveRight("user", User::IMPORTEXTAUTHUSERS)) {
-                    $ma->itemDone($item->getType(), $ids, MassiveAction::ACTION_NORIGHT);
+                    $ma->itemDone($item::class, $ids, MassiveAction::ACTION_NORIGHT);
                     $ma->addMessage($item->getErrorMessage(ERROR_RIGHT));
                     return;
                 }
@@ -466,9 +421,9 @@ class AuthLDAP extends CommonDBTM
                             true
                         )
                     ) {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_OK);
                     } else {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                         $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION, htmlescape($id)));
                     }
                 }
@@ -652,7 +607,6 @@ TWIG, ['authldaps_id' => $ID]);
                 ],
                 'entries' => $entries,
                 'total_number' => count($entries),
-                'filtered_number' => count($entries),
                 'showmassiveactions' => true,
                 'massiveactionparams' => [
                     'num_displayed' => count($entries),
@@ -1713,7 +1667,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => $total_results,
-            'filtered_number' => $total_results,
             'showmassiveactions' => true,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -2224,7 +2177,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => $total_results,
-            'filtered_number' => $total_results,
             'showmassiveactions' => true,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),

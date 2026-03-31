@@ -81,7 +81,6 @@ class Session
     private const IDOR_MAX_TOKENS = 2500;
 
     /**
-     * @var bool $bypass_right_checks
      * @internal
      */
     private static bool $bypass_right_checks = false;
@@ -1072,6 +1071,11 @@ class Session
         return $_SESSION["glpiID"] ?? false;
     }
 
+    public static function getCurrentUser(): ?User
+    {
+        return User::getById(Session::getLoginUserID()) ?: null;
+    }
+
     /**
      * Global check of session to prevent PHP vulnerability
      *
@@ -1468,9 +1472,9 @@ class Session
      * @param string  $module Module to check
      * @param int $right  Right to check
      *
-     * @return bool|int
+     * @return bool
      **/
-    public static function haveRight($module, $right)
+    public static function haveRight(string $module, int $right): bool
     {
         global $DB;
 
@@ -1478,16 +1482,16 @@ class Session
             return true;
         }
 
-        //If GLPI is using the slave DB -> read only mode
+        //If GLPI is using the replica DB -> read only mode
         if (
-            $DB->isSlave()
+            $DB->isReplica()
             && ($right & (CREATE | UPDATE | DELETE | PURGE))
         ) {
             return false;
         }
 
         if (isset($_SESSION["glpiactiveprofile"][$module])) {
-            return (int) $_SESSION["glpiactiveprofile"][$module] & $right;
+            return (bool) ((int) $_SESSION["glpiactiveprofile"][$module] & $right);
         }
 
         return false;
@@ -1948,7 +1952,7 @@ class Session
      *
      * @since 0.85
      *
-     * @param string $itemtype itemtype
+     * @param class-string<CommonDBTM> $itemtype itemtype
      * @param string $field    field
      *
      * @return bool

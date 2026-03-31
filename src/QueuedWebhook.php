@@ -45,10 +45,10 @@ use function Safe\strtotime;
 
 class QueuedWebhook extends CommonDBChild
 {
-    public static $rightname = 'config';
+    public static string $rightname = 'config';
 
-    public static $itemtype = Webhook::class;
-    public static $items_id = 'webhooks_id';
+    public static string $itemtype = Webhook::class;
+    public static string $items_id = 'webhooks_id';
 
     public static function getTypeName($nb = 0)
     {
@@ -118,12 +118,12 @@ class QueuedWebhook extends CommonDBChild
                 foreach ($ids as $id) {
                     if ($item->canEdit($id)) {
                         if ($item::sendById($id)) {
-                            $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
+                            $ma->itemDone($item::class, $id, MassiveAction::ACTION_OK);
                         } else {
-                            $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                            $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                         }
                     } else {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_NORIGHT);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_NORIGHT);
                     }
                 }
                 return;

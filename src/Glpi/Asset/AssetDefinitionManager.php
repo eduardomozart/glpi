@@ -210,6 +210,11 @@ final class AssetDefinitionManager extends AbstractDefinitionManager
             $CFG_GLPI['dictionnary_types'][] = $definition->getAssetModelClassName();
         }
 
+        // Allow model to have documents
+        if (!in_array($definition->getAssetModelClassName(), $CFG_GLPI['document_types'], true)) {
+            $CFG_GLPI['document_types'][] = $definition->getAssetModelClassName();
+        }
+
         // Bootstrap capacities
         foreach ($capacities as $capacity) {
             if ($definition->hasCapacityEnabled($capacity)) {
@@ -411,7 +416,7 @@ use Glpi\\Asset\\Asset;
 
 final class {$definition->getAssetClassName(false)} extends Asset {
     protected static string \$definition_system_name = '{$definition->fields['system_name']}';
-    public static \$rightname = '{$rightname}';
+    public static string \$rightname = '{$rightname}';
 }
 PHP
         );

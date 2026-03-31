@@ -42,10 +42,10 @@ use Glpi\RichText\RichText;
 class NotificationTemplateTranslation extends CommonDBChild
 {
     // From CommonDBChild
-    public static $itemtype = NotificationTemplate::class;
-    public static $items_id  = 'notificationtemplates_id';
+    public static string $itemtype = NotificationTemplate::class;
+    public static string $items_id  = 'notificationtemplates_id';
 
-    public $dohistory = true;
+    public bool $dohistory = true;
 
 
     #[Override]
@@ -181,7 +181,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),

@@ -38,13 +38,13 @@ use Glpi\Application\View\TemplateRenderer;
 class Contract_User extends CommonDBRelation
 {
     // From CommonDBRelation
-    public static $itemtype_1 = Contract::class;
-    public static $items_id_1 = 'contracts_id';
+    public static ?string $itemtype_1 = Contract::class;
+    public static ?string $items_id_1 = 'contracts_id';
 
-    public static $itemtype_2 = User::class;
-    public static $items_id_2 = 'users_id';
+    public static ?string $itemtype_2 = User::class;
+    public static ?string $items_id_2 = 'users_id';
 
-    public static $check_entity_coherency = false; // `entities_id`/`is_recursive` fields from user should not be used here
+    public static bool $check_entity_coherency = false; // `entities_id`/`is_recursive` fields from user should not be used here
 
     public function getForbiddenStandardMassiveAction()
     {
@@ -227,7 +227,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit && $withtemplate !== 2,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),

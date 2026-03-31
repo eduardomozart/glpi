@@ -37,13 +37,13 @@ use Glpi\Application\View\TemplateRenderer;
 
 class Ticket_Contract extends CommonDBRelation
 {
-    public static $itemtype_1 = Ticket::class;
-    public static $items_id_1 = 'tickets_id';
+    public static ?string $itemtype_1 = Ticket::class;
+    public static ?string $items_id_1 = 'tickets_id';
 
-    public static $itemtype_2 = Contract::class;
-    public static $items_id_2 = 'contracts_id';
-    public static $checkItem_2_Rights = self::HAVE_VIEW_RIGHT_ON_ITEM;
-    public static $check_entity_coherency = false;
+    public static ?string $itemtype_2 = Contract::class;
+    public static ?string $items_id_2 = 'contracts_id';
+    public static int $checkItem_2_Rights = self::HAVE_VIEW_RIGHT_ON_ITEM;
+    public static bool $check_entity_coherency = false;
 
     public static function getTypeName($nb = 0)
     {
@@ -155,6 +155,7 @@ TWIG, $twig_params);
                 'num' => _x('phone', 'Number'),
                 'begin_date' => __('Start date'),
                 'end_date' => __('End date'),
+                'expiration_date' => __('Expiration date'),
                 'comment' => _n('Comment', 'Comments', Session::getPluralNumber()),
             ];
             $formatters = [
@@ -190,6 +191,15 @@ TWIG, $twig_params);
                 }
                 $entry['type'] = $type_cache[$item->fields['contracttypes_id']];
                 $entry['end_date'] = Infocom::getWarrantyExpir($item->fields['begin_date'], $item->fields['duration'], 0, true);
+                $entry['expiration_date'] = Infocom::getWarrantyExpir(
+                    $item->fields['begin_date'],
+                    $item->fields['renewal'] == Contract::RENEWAL_EXPRESS ? $item->fields['duration'] + $item->fields['periodicity'] : $item->fields['duration'],
+                    0,
+                    true,
+                    (int) $item->fields['renewal'] === Contract::RENEWAL_TACIT,
+                    $item->fields['periodicity']
+                );
+
                 $entries[] = $entry;
             }
         }
@@ -202,7 +212,6 @@ TWIG, $twig_params);
             'formatters' => $formatters,
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),

@@ -146,7 +146,7 @@ class Impact extends CommonGLPI
             $total = 0;
         }
 
-        return self::createTabEntry(__("Impact analysis"), $total, $item::getType());
+        return self::createTabEntry(__("Impact analysis"), $total, $item::class);
     }
 
     public static function displayTabContentForItem(
@@ -1509,7 +1509,7 @@ HTML;
         $params = array_intersect_key($impact_item->fields, [
             'parent_id'         => 1,
             'impactcontexts_id' => 1,
-            'is_slave'          => 1,
+            'is_dependent'          => 1,
         ]);
 
         // Load context if exist
@@ -1713,7 +1713,7 @@ TWIG, $twig_params);
         global $DB;
 
         // Skip if not a valid impact type
-        if (!self::isEnabled($item::getType())) {
+        if (!self::isEnabled($item::class)) {
             return;
         }
 
@@ -1740,11 +1740,11 @@ TWIG, $twig_params);
 
         $impact_item->delete($impact_item->fields);
 
-        // Remove impact context if defined and not a slave, update others
-        // contexts if they are slave to us
+        // Remove impact context if defined and not a dependent, update others
+        // contexts if they are dependent to us
         if (
             $impact_item->fields['impactcontexts_id'] !== 0
-            && $impact_item->fields['is_slave'] !== 0
+            && $impact_item->fields['is_dependent'] !== 0
         ) {
             $DB->update(ImpactItem::getTable(), [
                 'impactcontexts_id' => 0,
@@ -1833,7 +1833,7 @@ TWIG, $twig_params);
         global $CFG_GLPI;
 
         // Form head
-        $action = htmlescape(Toolbox::getItemTypeFormURL(Config::getType()));
+        $action = htmlescape(Toolbox::getItemTypeFormURL(Config::class));
         echo "<form name='form' action='$action' method='post'>";
 
         // Table head

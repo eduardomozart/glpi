@@ -40,11 +40,11 @@ use Glpi\Toolbox\URL;
 class Contract_Supplier extends CommonDBRelation
 {
     // From CommonDBRelation
-    public static $itemtype_1 = Contract::class;
-    public static $items_id_1 = 'contracts_id';
+    public static ?string $itemtype_1 = Contract::class;
+    public static ?string $items_id_1 = 'contracts_id';
 
-    public static $itemtype_2 = Supplier::class;
-    public static $items_id_2 = 'suppliers_id';
+    public static ?string $itemtype_2 = Supplier::class;
+    public static ?string $items_id_2 = 'suppliers_id';
 
     public function getForbiddenStandardMassiveAction()
     {
@@ -219,7 +219,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),
@@ -342,7 +341,6 @@ TWIG, $twig_params);
             ],
             'entries' => $entries,
             'total_number' => count($entries),
-            'filtered_number' => count($entries),
             'showmassiveactions' => $canedit,
             'massiveactionparams' => [
                 'num_displayed' => count($entries),

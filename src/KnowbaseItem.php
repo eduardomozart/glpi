@@ -40,8 +40,13 @@ use Glpi\Event;
 use Glpi\Features\Clonable;
 use Glpi\Features\TreeBrowse;
 use Glpi\Features\TreeBrowseInterface;
-use Glpi\Form\ServiceCatalog\ServiceCatalog;
+use Glpi\Form\Category;
 use Glpi\Form\ServiceCatalog\ServiceCatalogLeafInterface;
+use Glpi\Knowbase\EditorAction;
+use Glpi\Knowbase\EditorActionSeparator;
+use Glpi\Knowbase\EditorActionType;
+use Glpi\Knowbase\History\HistoryBuilder;
+use Glpi\Knowbase\LastUpdateInfo;
 use Glpi\RichText\RichText;
 use Glpi\Search\Output\HTMLSearchOutput;
 
@@ -58,21 +63,19 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
     use Clonable;
     use TreeBrowse;
 
-    /** @var bool */
-    public static $browse_default = true;
+    public static bool $browse_default = true;
 
     // From CommonDBTM
-    public $dohistory    = true;
+    public bool $dohistory    = true;
 
-    /** @var array */
-    protected $items     = [];
+    protected array $items     = [];
 
     public const KNOWBASEADMIN = 1024;
     public const READFAQ       = 2048;
     public const PUBLISHFAQ    = 4096;
     public const COMMENTS      = 8192;
 
-    public static $rightname   = 'knowbase';
+    public static string $rightname   = 'knowbase';
 
     public function getCloneRelations(): array
     {
@@ -119,6 +122,11 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
     public static function canUpdate(): bool
     {
         return Session::haveRightsOr(self::$rightname, [UPDATE, self::KNOWBASEADMIN]);
+    }
+
+    public static function canDelete(): bool
+    {
+        return Session::haveRightsOr(self::$rightname, [DELETE, self::KNOWBASEADMIN]);
     }
 
     public static function canView(): bool
@@ -215,17 +223,28 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
         return $url;
     }
 
+    /**
+     * @param array<string|array<string>>|null $menus
+     * @param array<string, mixed> $options
+     */
+    public static function displayFullPageForItem(
+        $id,
+        ?array $menus = null,
+        array $options = []
+    ): void {
+        // Load Tiptap editor for KB articles
+        Html::requireJs('tiptap');
+
+        parent::displayFullPageForItem($id, $menus, $options);
+    }
+
     public function defineTabs($options = [])
     {
         $ong = [];
         $this->addStandardTab(self::class, $ong, $options);
         $this->addStandardTab(KnowbaseItem_Item::class, $ong, $options);
-        $this->addStandardTab(Document_Item::class, $ong, $options);
         $this->addStandardTab(KnowbaseItemTranslation::class, $ong, $options);
-        $this->addStandardTab(ServiceCatalog::class, $ong, $options);
         $this->addStandardTab(Log::class, $ong, $options);
-        $this->addStandardTab(KnowbaseItem_Revision::class, $ong, $options);
-        $this->addStandardTab(KnowbaseItem_Comment::class, $ong, $options);
 
         return $ong;
     }
@@ -233,21 +252,9 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
     public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0)
     {
         if (!$withtemplate) {
-            $nb = 0;
             switch ($item::class) {
                 case self::class:
                     $ong[1] = self::createTabEntry(self::getTypeName(1));
-                    if ($item->canUpdateItem()) {
-                        if ($_SESSION['glpishow_count_on_tabs']) {
-                            $nb = $item->countVisibilities();
-                        }
-                        $ong[2] = self::createTabEntry(
-                            _n('Target', 'Targets', Session::getPluralNumber()),
-                            $nb,
-                            $item::getType()
-                        );
-                        $ong[3] = self::createTabEntry(__('Edit'), 0, $item::class, 'ti ti-pencil');
-                    }
                     return $ong;
             }
         }
@@ -261,13 +268,7 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
         }
         switch ($tabnum) {
             case 1:
-                return (bool) $item->showFull();
-
-            case 2:
-                return $item->showVisibility();
-
-            case 3:
-                return $item->showForm($item->getID());
+                return (bool) $item->showFull(['mode' => 'edit']);
 
             default:
                 return false;
@@ -357,14 +358,6 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
             ];
             $kb_item_item = new KnowbaseItem_Item();
             $kb_item_item->add($params);
-        }
-
-        // Support old "knowbaseitemcategories_id" input
-        if (isset($this->input['knowbaseitemcategories_id'])) {
-            Toolbox::deprecated('knowbaseitemcategories_id input is deprecated. Use _categories instead');
-            $categories = $this->input['knowbaseitemcategories_id'];
-            $this->input['_categories'] = is_array($categories) ? $categories : [$categories];
-            unset($this->input['knowbaseitemcategories_id']);
         }
 
         // Handle categories
@@ -726,6 +719,11 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
         ) {
             $input["is_faq"] = 0;
         }
+
+        if (!isset($input['users_id'])) {
+            $input["users_id"] = Session::getLoginUserID();
+        }
+
         return $input;
     }
 
@@ -749,14 +747,6 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
             ]
         );
 
-        // Support old "knowbaseitemcategories_id" input
-        if (isset($this->input['knowbaseitemcategories_id'])) {
-            Toolbox::deprecated('knowbaseitemcategories_id input is deprecated. Use _categories instead');
-            $categories = $this->input['knowbaseitemcategories_id'];
-            $this->input['_categories'] = is_array($categories) ? $categories : [$categories];
-            unset($this->input['knowbaseitemcategories_id']);
-        }
-
         // Update categories
         $this->update1NTableData(KnowbaseItem_KnowbaseItemCategory::class, '_categories');
         NotificationEvent::raiseEvent('update', $this);
@@ -779,64 +769,7 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
             return false;
         }
 
-        $canedit = $this->can($ID, UPDATE);
-
-        $item = null;
-        // Load ticket solution
-        if (empty($ID) && !empty($options['item_itemtype']) && !empty($options['item_items_id'])) {
-            /** @var ?CommonITILObject $item */
-            if ($item = getItemForItemtype($options['item_itemtype'])) {
-                if ($item->getFromDB($options['item_items_id'])) {
-                    $this->fields['name']   = $item->getField('name');
-                    if (isset($options['_fup_to_kb'])) {
-                        $fup = new ITILFollowup();
-                        $fup->getFromDBByCrit([
-                            'id'           => $options['_fup_to_kb'],
-                            'itemtype'     => $item::class,
-                            'items_id'     => $item->getID(),
-                        ]);
-                        $this->fields['answer'] = $fup->getField('content');
-                    } elseif (isset($options['_task_to_kb'])) {
-                        $task = $item->getTaskClassInstance();
-                        $task->getFromDB($options['_task_to_kb']);
-                        $this->fields['answer'] = $task->getField('content');
-                    } elseif (isset($options['_sol_to_kb'])) {
-                        $solution = new ITILSolution();
-                        $solution->getFromDBByCrit([
-                            'itemtype'     => $item::class,
-                            'items_id'     => $item->getID(),
-                            [
-                                'NOT' => ['status'       => CommonITILValidation::REFUSED],
-                            ],
-                        ]);
-                        $this->fields['answer'] = $solution->getField('content');
-                    }
-                    if ($item->isField('itilcategories_id')) {
-                        $ic = new ITILCategory();
-                        if (
-                            $ic->getFromDB($item->getField('itilcategories_id'))
-                            && $ic->fields['knowbaseitemcategories_id'] > 0
-                        ) {
-                            $this->fields['knowbaseitemcategories_id'] = $ic->fields['knowbaseitemcategories_id'];
-                        }
-                    }
-                }
-            }
-        }
-
-        if (($item !== null) && $item = getItemForItemtype($options['item_itemtype'])) {
-            $item->getFromDB($options['item_items_id']);
-        }
-
-        TemplateRenderer::getInstance()->display('pages/tools/kb/knowbaseitem.html.twig', [
-            'item' => $this,
-            'linked_item' => $item,
-            'no_header' => true,
-            'params' => [
-                'canedit' => $canedit,
-            ] + $options,
-        ]);
-
+        $this->showFull(['mode' => 'add']);
         return true;
     }
 
@@ -870,7 +803,7 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
      **/
     public function showFull($options = [])
     {
-        global $CFG_GLPI, $DB;
+        global $CFG_GLPI;
 
         if (!$this->can($this->fields['id'], READ)) {
             return false;
@@ -878,76 +811,64 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
 
         $default_options = [
             'display' => true,
+            'mode' => "view",
         ];
         $options = array_merge($default_options, $options);
-
-        $linkusers_id = true;
-        if (
-            ((Session::getLoginUserID() === false) && $CFG_GLPI["use_public_faq"])
-            || (Session::getCurrentInterface() === "helpdesk")
-            || !User::canView()
-        ) {
-            $linkusers_id = false;
-        }
+        $mode = $options['mode'];
 
         $this->updateCounter();
 
-        $categories = KnowbaseItem_KnowbaseItemCategory::getItems($this);
-        $article_categories = [];
-        foreach ($categories as $category) {
-            $knowbaseitemcategories_id = $category['knowbaseitemcategories_id'];
-            $fullcategoryname = getTreeValueCompleteName('glpi_knowbaseitemcategories', $knowbaseitemcategories_id);
-            $article_categories[$knowbaseitemcategories_id] = $fullcategoryname;
+        $params = [
+            'item_id' => $this->fields['id'],
+            'subject' => $this->fields['name'],
+            'answer'  => $this->getAnswer(),
+            'mode'    => $mode,
+        ];
+
+        if ($mode === "edit" || $mode === "view") {
+            $can_update = $this->can($this->fields['id'], UPDATE);
+
+            // Add last update info
+            $last_update_info = $this->getLastUpdateInfo();
+            $params['last_update_date']            = $last_update_info->getRawDate();
+            $params['last_update_relative_date']   = $last_update_info->getRelativeDate();
+            $params['last_update_author_name']     = $last_update_info->getAuthorName();
+            $params['last_update_author_link']     = $last_update_info->getAuthorLink();
+            $params['last_update_can_view_author'] = $last_update_info->canViewAuthor();
+
+            // Add linked documents info
+            $documents = $this->getDocumentsInfo();
+            $params['documents']       = $documents;
+            $params['documents_count'] = count($documents);
+            $params['can_add_documents'] = $can_update;
+
+            // Add associated items info
+            $items                         = $this->getAssociatedItemsInfo();
+            $params['related_items']       = $items;
+            $params['related_items_count'] = count($items);
+            $params['can_link_items']      = $can_update;
+
+            // General fields
+            $params['views']        = $this->fields['view'];
+            $params['can_edit']     = $can_update;
+            $params['illustration'] = $this->fields['illustration'] ?: 'kb-faq';
+
+            // Translations informations
+            $params['translations_count']    = KnowbaseItemTranslation::getNumberOfTranslationsForItem($this);
+            $params['existing_translations'] = array_values(KnowbaseItemTranslation::getAlreadyTranslatedForItem($this));
+            $params['default_language']      = $CFG_GLPI['language'];
+
+            // Add actions
+            $params['actions'] = $mode === "edit" ? $this->getEditorActions() : [];
+        } elseif ($mode === "add") {
+            $params['can_edit'] = $this->can(-1, CREATE);
         }
 
-        // Show documents attached to the FAQ Item
-        $sort = 'filename';
-        $order = 'ASC';
-        $criteria = Document_Item::getDocumentForItemRequest($this, ["$sort $order"]);
-        $criteria['WHERE'][] = ['is_deleted' => '0'];
-        $iterator = $DB->request($criteria);
+        $out = TemplateRenderer::getInstance()->render(
+            'pages/tools/kb/article.html.twig',
+            $params,
+        );
 
-        $attachments = [];
-        $heading_names = [];
-        if (count($iterator) > 0) {
-            $document = new Document();
-            foreach ($iterator as $data) {
-                $docID        = $data["id"];
-                $downloadlink = htmlescape(NOT_AVAILABLE);
-
-                if ($document->getFromDB($docID)) {
-                    $downloadlink = $document->getDownloadLink();
-                }
-
-                if (!isset($heading_names[$data["documentcategories_id"]])) {
-                    $heading_names[$data["documentcategories_id"]] = Dropdown::getDropdownName(
-                        "glpi_documentcategories",
-                        $data["documentcategories_id"]
-                    );
-                }
-
-                $attachments[] = [
-                    'row_class' => $data['is_deleted'] ? 'table-danger' : '',
-                    'filename' => $downloadlink,
-                    'heading' => $heading_names[$data["documentcategories_id"]],
-                    'assocdate' => $data["assocdate"],
-                ];
-            }
-        }
-
-        $writer_link = '';
-        if ($this->fields["users_id"]) {
-            $writer_link = getUserLink($this->fields["users_id"]);
-        }
-
-        $out = TemplateRenderer::getInstance()->render('pages/tools/kb/article.html.twig', [
-            'item' => $this,
-            'categories' => $article_categories,
-            'subject' => KnowbaseItemTranslation::getTranslatedValue($this, 'name'),
-            'answer' => $this->getAnswer(),
-            'attachments' => $attachments,
-            'writer_link' => $writer_link,
-        ]);
         if ($options['display']) {
             echo $out;
         } else {
@@ -955,6 +876,280 @@ class KnowbaseItem extends CommonDBVisible implements ExtraVisibilityCriteria, S
         }
 
         return true;
+    }
+
+    /**
+     * @return list<array{
+     *      'id': int,
+     *      'filename': string,
+     *      'extension': string,
+     *      'icon_class': string,
+     *      'color_class': string,
+     *      'download_url': string,
+     * }>
+     */
+    private function getDocumentsInfo(): array
+    {
+        global $DB;
+
+        // Get documents attached to the FAQ Item
+        $sort = 'filename';
+        $order = 'ASC';
+        $criteria = Document_Item::getDocumentForItemRequest($this, ["$sort $order"]);
+        $criteria['WHERE'][] = ['is_deleted' => '0'];
+        $iterator = $DB->request($criteria);
+
+        $documents = [];
+        if (count($iterator) > 0) {
+            $document = new Document();
+            foreach ($iterator as $data) {
+                $doc_id = (int) $data["id"];
+
+                if ($document->getFromDB($doc_id)) {
+                    // Enrich documents data for main tab display
+                    $filename = (string) ($document->fields['filename'] ?? '');
+                    $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                    $icon_and_color = self::getDocumentIconAndColor($extension);
+
+                    $documents[] = [
+                        'assoc_id' => $data['assocID'],
+                        'id' => $doc_id,
+                        'filename' => $filename,
+                        'extension' => $extension,
+                        'icon_class' => $icon_and_color['icon_class'],
+                        'color_class' => $icon_and_color['color_class'],
+                        'download_url' => $document->getDownloadUrl(),
+                    ];
+                }
+            }
+        }
+
+        return $documents;
+    }
+
+    /**
+     * @return list<array{
+     *      'id': int,
+     *      'items_id': int,
+     *      'itemtype': string,
+     *      'name': string,
+     *      'link_url': string,
+     *      'type_name': string,
+     *      'icon_class': string,
+     *      'color_class': string,
+     *      'sector': string,
+     * }>
+     */
+    private function getAssociatedItemsInfo(): array
+    {
+        // Fetch related items for the KB article
+        $related_items = [];
+        $linked_items_data = KnowbaseItem_Item::getItems($this);
+
+        foreach ($linked_items_data as $data) {
+            $linked_itemtype = $data['itemtype'];
+            $linked_items_id = $data['items_id'];
+
+            if (!is_a($linked_itemtype, CommonDBTM::class, true)) {
+                continue;
+            }
+            /** @var class-string<CommonDBTM> $linked_itemtype */
+
+            $linked_item = new $linked_itemtype();
+            if (!$linked_item->getFromDB($linked_items_id) || !$linked_item->can($linked_items_id, READ)) {
+                continue;
+            }
+
+            $icon_and_color = self::getRelatedItemIconAndColor($linked_itemtype);
+
+            $related_items[] = [
+                'id'          => $data['id'],
+                'items_id'    => $linked_items_id,
+                'itemtype'    => $linked_itemtype,
+                'name'        => $linked_item->getName(),
+                'link_url'    => $linked_item->getLinkURL(),
+                'type_name'   => $linked_itemtype::getTypeName(1),
+                'icon_class'  => $icon_and_color['icon_class'],
+                'color_class' => $icon_and_color['color_class'],
+                'sector'      => $icon_and_color['sector'],
+            ];
+        }
+
+        $writer_link = '';
+        if ($this->fields["users_id"]) {
+            $writer_link = getUserLink($this->fields["users_id"]);
+        }
+
+        return $related_items;
+    }
+
+    /** @return array<EditorAction|EditorActionSeparator> */
+    private function getEditorActions(): array
+    {
+        $actions = [];
+        if ($this->can($this->fields['id'], UPDATE)) {
+            $actions[] = new EditorAction(
+                label: __("History"),
+                icon: "ti ti-history",
+                type: EditorActionType::LOAD_SIDE_PANEL,
+                params: [
+                    'id' => $this->fields['id'],
+                    'key' => 'history',
+                ],
+                // 1 for initial revision
+                counter: 1 + countElementsInTable(KnowbaseItem_Revision::getTable(), [
+                    'knowbaseitems_id' => $this->fields['id'],
+                    'language' => '',
+                ]),
+            );
+
+            if ($this->canComment()) {
+                $actions[] = new EditorAction(
+                    label: "Comments",
+                    icon: "ti ti-message-circle",
+                    type: EditorActionType::LOAD_SIDE_PANEL,
+                    params: [
+                        'id' => $this->fields['id'],
+                        'key' => 'comments',
+                    ],
+                    counter: countElementsInTable(KnowbaseItem_Comment::getTable(), [
+                        'knowbaseitems_id' => $this->fields['id'],
+                    ]),
+                );
+            }
+
+            $actions[] = new EditorAction(
+                label: "Service catalog",
+                icon: "ti ti-library",
+                type: EditorActionType::LOAD_SIDE_PANEL,
+                params: [
+                    'id' => $this->fields['id'],
+                    'key' => 'service-catalog',
+                ],
+            );
+
+            $actions[] = new EditorActionSeparator();
+            $actions[] = new EditorAction(
+                label: "Add to FAQ",
+                icon: "ti ti-bookmark",
+                type: EditorActionType::TOGGLE_VALUE,
+                params: [
+                    'id' => $this->fields['id'],
+                    'field' => 'is_faq',
+                    'checked' => $this->fields['is_faq'],
+                ],
+            );
+            $actions[] = new EditorAction(
+                label: _n('Target', 'Targets', Session::getPluralNumber()),
+                icon: "ti ti-eye",
+                type: EditorActionType::OPEN_MODAL,
+                params: [
+                    'id' => $this->fields['id'],
+                    'key' => 'SidePanel/permissions',
+                    'title' => _n('Target', 'Targets', Session::getPluralNumber()),
+                ],
+            );
+        }
+
+        if ($this->can($this->fields['id'], PURGE)) {
+            $actions[] = new EditorActionSeparator();
+            $actions[] = new EditorAction(
+                label: __("Delete article"),
+                icon: "ti ti-trash",
+                type: EditorActionType::DELETE_ARTICLE,
+                params: [
+                    'id' => $this->fields['id'],
+                ],
+                is_danger: true,
+            );
+        }
+
+        return $actions;
+    }
+
+    public function getLastUpdateInfo(): LastUpdateInfo
+    {
+        $history = (new HistoryBuilder($this))->buildHistory();
+        $event = $history->getLatestEvent();
+
+        $author = User::getById($event->getAuthor()) ?: null;
+        return new LastUpdateInfo(
+            author_link: $author?->getLinkUrl(),
+            author_name: $author?->getName(),
+            date: $event->getDate(),
+            can_view_author: $author ? $author->can($author->getID(), READ) : false,
+        );
+    }
+
+    /**
+     * Get Tabler icon class and Bootstrap color class for a document based on its extension.
+     *
+     * @param string $extension File extension (lowercase, without dot)
+     * @return array{icon_class: string, color_class: string}
+     */
+    private static function getDocumentIconAndColor(string $extension): array
+    {
+        return match ($extension) {
+            'pdf' => [
+                'icon_class' => 'ti-file-type-pdf',
+                'color_class' => 'text-danger',
+            ],
+            'doc', 'docx' => [
+                'icon_class' => 'ti-file-type-doc',
+                'color_class' => 'text-primary',
+            ],
+            'xls', 'xlsx' => [
+                'icon_class' => 'ti-file-spreadsheet',
+                'color_class' => 'text-success',
+            ],
+            'ppt', 'pptx' => [
+                'icon_class' => 'ti-presentation',
+                'color_class' => 'text-orange',
+            ],
+            'zip', 'rar', '7z' => [
+                'icon_class' => 'ti-file-zip',
+                'color_class' => 'text-warning',
+            ],
+            'txt', 'md' => [
+                'icon_class' => 'ti-file-text',
+                'color_class' => 'text-info',
+            ],
+            'png', 'jpg', 'jpeg', 'gif', 'svg', 'webp' => [
+                'icon_class' => 'ti-photo',
+                'color_class' => 'text-purple',
+            ],
+            default => [
+                'icon_class' => 'ti-file',
+                'color_class' => 'text-secondary',
+            ],
+        };
+    }
+
+    /**
+     * Get icon class and color class for a related item based on its menu sector.
+     *
+     * @param class-string<CommonDBTM> $itemtype The itemtype class name
+     * @return array{icon_class: string, color_class: string, sector: string}
+     */
+    private static function getRelatedItemIconAndColor(string $itemtype): array
+    {
+        $sector = Html::getMenuSectorForItemtype($itemtype);
+
+        $color_mapping = [
+            'assets'     => 'text-azure',   // Blue
+            'helpdesk'   => 'text-yellow',  // Yellow
+            'tools'      => 'text-teal',    // Dark green
+            'management' => 'text-purple',  // Purple
+            'admin'      => 'text-orange',  // Orange
+        ];
+
+        $color_class = $color_mapping[$sector ?? ''] ?? 'text-secondary';
+
+        return [
+            'icon_class' => $itemtype::getIcon(),
+            'color_class' => $color_class,
+            'sector' => $sector ?? 'unknown',
+        ];
     }
 
     /**
@@ -1146,7 +1341,7 @@ TWIG, $twig_params);
                 break;
 
             case 'search':
-                if ((string) $params["contains"] !== '') {
+                if (((string) $params["contains"]) !== '') {
                     $search = $params["contains"];
                     $search_wilcard = self::computeBooleanFullTextSearch($search);
 
@@ -1963,6 +2158,52 @@ TWIG, $twig_params);
             ],
         ];
 
+        $tab[] = [
+            'id'   => 'service_catalog',
+            'name' => __('Service catalog'),
+        ];
+
+        $tab[] = [
+            'id'                 => '84',
+            'table'              => self::getTable(),
+            'field'              => 'show_in_service_catalog',
+            'name'               => __("Show in service catalog"),
+            'datatype'           => 'bool',
+        ];
+
+        $tab[] = [
+            'id'                 => '85',
+            'table'              => self::getTable(),
+            'field'              => 'is_pinned',
+            'name'               => __("Pin to top of the service catalog"),
+            'datatype'           => 'bool',
+        ];
+
+        $tab[] = [
+            'id'                 => '86',
+            'table'              => self::getTable(),
+            'field'              => 'description',
+            'name'               => __("Description"),
+            'datatype'           => 'text',
+        ];
+
+        $tab[] = [
+            'id'                 => '87',
+            'table'              => Category::getTable(),
+            'field'              => 'name',
+            'name'               => _n("Category", "Categories", 1),
+            'datatype'           => 'dropdown',
+        ];
+
+        $tab[] = [
+            'id'                 => '88',
+            'table'              => self::getTable(),
+            'field'              => 'illustration',
+            'name'               => __("Illustration"),
+            'datatype'           => 'text',
+            'search'             => false,
+        ];
+
         // add objectlock search options
         $tab = array_merge($tab, ObjectLock::rawSearchOptionsToAdd(get_class($this)));
 
@@ -1983,6 +2224,12 @@ TWIG, $twig_params);
 
     public function pre_updateInDB()
     {
+        // Only create a revision if the answer was modified.
+        // Name changes are tracked separately as "Renamed" events in the history.
+        if (!in_array('answer', $this->updates)) {
+            return;
+        }
+
         $revision = new KnowbaseItem_Revision();
         $kb = new KnowbaseItem();
         $kb->getFromDB($this->getID());
@@ -2052,7 +2299,6 @@ TWIG, $twig_params);
 
         $values = [
             'id'     => $this->getID(),
-            'name'   => $revision->fields['name'],
             'answer' => $revision->fields['answer'],
         ];
 
@@ -2233,5 +2479,15 @@ TWIG, $twig_params);
     public function getServiceCatalogLink(): string
     {
         return $this->getLinkURL();
+    }
+
+    #[Override]
+    public static function getSectorizedDetails(): array
+    {
+        if (Session::getCurrentInterface() == 'central') {
+            return ['tools', "knowbaseitem"];
+        } else {
+            return [];
+        }
     }
 }

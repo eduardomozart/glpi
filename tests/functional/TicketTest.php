@@ -72,6 +72,7 @@ use Ticket;
 use Ticket_Contract;
 use Ticket_User;
 use TicketSatisfaction;
+use TicketTask;
 use TicketTemplate;
 use TicketTemplateMandatoryField;
 use TicketValidation;
@@ -594,7 +595,7 @@ class TicketTest extends DbTestCase
             'date'       => '2015-02-01 00:00:00',
         ]);
 
-        $task = new \TicketTask();
+        $task = new TicketTask();
         $this->assertGreaterThan(
             0,
             (int) $task->add([
@@ -1078,7 +1079,7 @@ class TicketTest extends DbTestCase
         $this->assertFalse($ticket->isNewItem());
 
         // 6 - check creation of the tasks
-        $tickettask = new \TicketTask();
+        $tickettask = new TicketTask();
         $found_tasks = $tickettask->find(['tickets_id' => $tickets_id], "id ASC");
 
         // 6.1 -> check first task
@@ -2064,16 +2065,6 @@ class TicketTest extends DbTestCase
         }
     }
 
-    /**
-     * @param $rights
-     * @return void
-     * @deprecated 11.0.0 - Use changeTechRights() instead
-     */
-    public function changeTechRight($rights = 168967)
-    {
-        $this->changeTechRights(['ticket' => $rights]);
-    }
-
     public function testPriorityAcl()
     {
         $this->login();
@@ -2296,7 +2287,7 @@ class TicketTest extends DbTestCase
         );
 
         // Assign right without UPDATE
-        $this->changeTechRight(Ticket::ASSIGN | Ticket::READALL);
+        $this->changeTechRights(['ticket' => Ticket::ASSIGN | Ticket::READALL]);
         $this->checkFormOutput(
             $ticket,
             $name = false,
@@ -2367,7 +2358,7 @@ class TicketTest extends DbTestCase
             'content' => 'Ticket to check cloning',
         ]);
         $this->assertGreaterThan(0, $ticket_id);
-        $task = new \TicketTask();
+        $task = new TicketTask();
         $this->assertGreaterThan(
             0,
             (int) $task->add([
@@ -2612,7 +2603,7 @@ class TicketTest extends DbTestCase
             );
 
             // TicketTask
-            $task = new \TicketTask();
+            $task = new TicketTask();
             $this->assertGreaterThan(
                 0,
                 (int) $task->add([
@@ -4008,7 +3999,7 @@ class TicketTest extends DbTestCase
             'status'      => CommonITILObject::INCOMING,
         ]);
 
-        $task = new \TicketTask();
+        $task = new TicketTask();
         $fup = new ITILFollowup();
         $task->add([
             'tickets_id'   => $ticket2,
@@ -4295,7 +4286,7 @@ class TicketTest extends DbTestCase
         ]));
 
         // Add a task to the child ticket
-        $task = new \TicketTask();
+        $task = new TicketTask();
         $this->assertGreaterThan(
             0,
             $task->add([
@@ -4625,6 +4616,61 @@ HTML,
         $this->assertTrue((bool) $ticket->canUserAddFollowups($post_only_id));
         $this->login('post-only', 'postonly');
         $this->assertTrue((bool) $ticket->canAddFollowups());
+    }
+
+    /**
+     * Assigning a group to a Ticket preserve previous associated groups when previous groups_id not passed in input
+     *
+     * Scenario :
+     * - create a ticket associated with a group
+     * - update the ticket to associate with another group (without first group in input)
+     * -> both groups are associated
+     *
+     * Notice behavior is not always the same, @see \tests\units\Glpi\Features\AssignableItemTest::testAssignGroupRemovePreviousData()
+     */
+    public function testAssignGroup(): void
+    {
+        // --- arrange : create groups + ticket
+        $this->login();
+
+        $group_1 = $this->createItem(Group::class, $this->getMinimalCreationInput(Group::class));
+        $group_2 = $this->createItem(Group::class, $this->getMinimalCreationInput(Group::class));
+
+        $ticket = $this->createItem(
+            Ticket::class,
+            ['_groups_id_assign' => [$group_1->getID()]] + $this->getMinimalCreationInput(Ticket::class)
+        );
+
+        // check for one associated element
+        $this->assertEquals(
+            1,
+            countElementsInTable(
+                Group_Ticket::getTable(),
+                [   'groups_id'  =>  $group_1->getID(),
+                    'tickets_id'   => $ticket->getID(),
+                    'type' => CommonITILActor::ASSIGN,
+                ]
+            )
+        );
+
+        // --- act : update ticket content to match rule
+        $this->updateItem(
+            Ticket::class,
+            $ticket->getID(),
+            ['_groups_id_assign'   => [$group_2->getID()],]
+        );
+
+        // --- assert : groups 1 & 2 are assigned
+        $this->assertEquals(
+            2,
+            countElementsInTable(
+                Group_Ticket::getTable(),
+                [   'groups_id'  =>  [$group_1->getID(), $group_2->getID()],
+                    'tickets_id'   => $ticket->getID(),
+                    'type' => CommonITILActor::ASSIGN,
+                ]
+            )
+        );
     }
 
     public function testCanAddFollowupsAsRequesterGroup()
@@ -5739,7 +5785,7 @@ HTML,
         $this->assertEquals(0, $ticket->countUsers(CommonITILActor::ASSIGN));
         $this->assertEquals(0, $ticket->countUsers(CommonITILActor::REQUESTER));
 
-        $this->changeTechRight(Ticket::ASSIGN | Ticket::READALL);
+        $this->changeTechRights(['ticket' => Ticket::ASSIGN | Ticket::READALL]);
         $this->assertFalse($ticket->canUpdateItem());
         $this->assertTrue((bool) $ticket->canAssign());
         $this->assertTrue($ticket->update([
@@ -5792,7 +5838,7 @@ HTML,
         $this->assertEquals(0, $ticket->countUsers(CommonITILActor::ASSIGN));
         $this->assertEquals(0, $ticket->countUsers(CommonITILActor::REQUESTER));
 
-        $this->changeTechRight(Ticket::READALL | UPDATE);
+        $this->changeTechRights(['ticket' => Ticket::READALL | UPDATE]);
         $this->assertTrue($ticket->canUpdateItem());
         $this->assertFalse((bool) $ticket->canAssign());
         $this->assertTrue($ticket->update([
@@ -5845,7 +5891,7 @@ HTML,
         $this->assertEquals(0, $ticket->countUsers(CommonITILActor::ASSIGN));
         $this->assertEquals(0, $ticket->countUsers(CommonITILActor::REQUESTER));
 
-        $this->changeTechRight(Ticket::ASSIGN | UPDATE | Ticket::READALL);
+        $this->changeTechRights(['ticket' => Ticket::ASSIGN | UPDATE | Ticket::READALL]);
         $this->assertTrue($ticket->canUpdateItem());
         $this->assertTrue((bool) $ticket->canAssign());
         $this->assertTrue($ticket->update([
@@ -6947,7 +6993,7 @@ HTML,
         ]);
         $this->assertGreaterThan(0, $tickets_id);
 
-        $this->changeTechRight(Ticket::READMY);
+        $this->changeTechRights(['ticket' => Ticket::READMY]);
         $this->assertFalse($ticket->canViewItem());
     }
 
@@ -6962,7 +7008,7 @@ HTML,
         ]);
         $this->assertGreaterThan(0, $tickets_id);
 
-        $this->changeTechRight(Ticket::READNEWTICKET);
+        $this->changeTechRights(['ticket' => Ticket::READNEWTICKET]);
         $this->assertTrue($ticket->canViewItem());
     }
 
@@ -7413,7 +7459,7 @@ HTML,
         );
 
         $task1 = $this->createItem(
-            \TicketTask::class,
+            TicketTask::class,
             [
                 'tickets_id'    => $ticket->getID(),
                 'content'       => 'public task',
@@ -7422,7 +7468,7 @@ HTML,
         );
 
         $task2 = $this->createItem(
-            \TicketTask::class,
+            TicketTask::class,
             [
                 'tickets_id'    => $ticket->getID(),
                 'content'       => 'private task of tech user',
@@ -7433,7 +7479,7 @@ HTML,
         );
 
         $task3 = $this->createItem(
-            \TicketTask::class,
+            TicketTask::class,
             [
                 'tickets_id'    => $ticket->getID(),
                 'content'       => 'private task of normal user',
@@ -7444,7 +7490,7 @@ HTML,
         );
 
         $task4 = $this->createItem(
-            \TicketTask::class,
+            TicketTask::class,
             [
                 'tickets_id'    => $ticket->getID(),
                 'content'       => 'private task assigned to normal user',
@@ -7455,7 +7501,7 @@ HTML,
         );
 
         $task5 = $this->createItem(
-            \TicketTask::class,
+            TicketTask::class,
             [
                 'tickets_id'        => $ticket->getID(),
                 'content'           => 'private task assigned to see group',
@@ -7466,7 +7512,7 @@ HTML,
         );
 
         $task6 = $this->createItem(
-            \TicketTask::class,
+            TicketTask::class,
             [
                 'tickets_id'    => $ticket->getID(),
                 'content'       => 'private task assign to tech user',
@@ -7492,32 +7538,32 @@ HTML,
                 [
                     'documents_id'   => $document->getID(),
                     'items_id'       => $task1->getID(),
-                    'itemtype'       => \TicketTask::class,
+                    'itemtype'       => TicketTask::class,
                 ],
                 [
                     'documents_id'   => $document->getID(),
                     'items_id'       => $task2->getID(),
-                    'itemtype'       => \TicketTask::class,
+                    'itemtype'       => TicketTask::class,
                 ],
                 [
                     'documents_id'   => $document->getID(),
                     'items_id'       => $task3->getID(),
-                    'itemtype'       => \TicketTask::class,
+                    'itemtype'       => TicketTask::class,
                 ],
                 [
                     'documents_id'   => $document->getID(),
                     'items_id'       => $task4->getID(),
-                    'itemtype'       => \TicketTask::class,
+                    'itemtype'       => TicketTask::class,
                 ],
                 [
                     'documents_id'   => $document->getID(),
                     'items_id'       => $task5->getID(),
-                    'itemtype'       => \TicketTask::class,
+                    'itemtype'       => TicketTask::class,
                 ],
                 [
                     'documents_id'   => $document->getID(),
                     'items_id'       => $task6->getID(),
-                    'itemtype'       => \TicketTask::class,
+                    'itemtype'       => TicketTask::class,
                 ],
                 [
                     'documents_id'   => $weblink_document->getID(),
@@ -7680,7 +7726,7 @@ HTML,
                 array_values(
                     array_filter(
                         $timeline,
-                        fn($entry) => $entry['type'] === \TicketTask::class
+                        fn($entry) => $entry['type'] === TicketTask::class
                     )
                 ),
             );
@@ -7689,7 +7735,7 @@ HTML,
             $has_weblink = false;
             foreach ($timeline as $entry) {
                 if (
-                    $entry['type'] === \TicketTask::class
+                    $entry['type'] === TicketTask::class
                     && isset($entry['item']['content'])
                     && $entry['item']['content'] !== 'private task assigned to normal user'
                 ) {
@@ -7723,7 +7769,7 @@ HTML,
             ])
         );
 
-        $task = new \TicketTask();
+        $task = new TicketTask();
         $date = date('Y-m-d H:i:s');
         // Create one task with a different creation date after the others
         $this->assertGreaterThan(
@@ -7758,7 +7804,7 @@ HTML,
         $timeline_items = $ticket->getTimelineItems();
 
         // Ensure that the tasks are ordered by creation date. And, if they have the same creation date, by ID
-        $tasks = array_values(array_filter($timeline_items, static fn($entry) => $entry['type'] === \TicketTask::class));
+        $tasks = array_values(array_filter($timeline_items, static fn($entry) => $entry['type'] === TicketTask::class));
         // Check tasks are in order of creation date
         $creation_dates = array_map(static fn($entry) => $entry['item']['date_creation'], $tasks);
         $sorted_dates = $creation_dates;
@@ -7773,7 +7819,7 @@ HTML,
 
         // Check reverse timeline order
         $timeline_items = $ticket->getTimelineItems(['sort_by_date_desc' => true]);
-        $tasks = array_values(array_filter($timeline_items, static fn($entry) => $entry['type'] === \TicketTask::class));
+        $tasks = array_values(array_filter($timeline_items, static fn($entry) => $entry['type'] === TicketTask::class));
         $creation_dates = array_map(static fn($entry) => $entry['item']['date_creation'], $tasks);
         $sorted_dates = $creation_dates;
         sort($sorted_dates);
@@ -8952,7 +8998,7 @@ HTML,
 
         yield [
             'profilerights' => [
-                'followup' => ITILFollowup::ADDMYTICKET,
+                'followup' => ITILFollowup::ADDMY,
                 'ticket'   => 0,
                 'document' => 0,
             ],
@@ -8979,7 +9025,7 @@ HTML,
 
         yield [
             'profilerights' => [
-                'followup' => ITILFollowup::ADDMYTICKET,
+                'followup' => ITILFollowup::ADDMY,
                 'ticket'   => UPDATE,
                 'document' => 0,
             ],
@@ -8988,7 +9034,7 @@ HTML,
 
         yield [
             'profilerights' => [
-                'followup' => ITILFollowup::ADDMYTICKET,
+                'followup' => ITILFollowup::ADDMY,
                 'ticket'   => 0,
                 'document' => CREATE,
             ],
@@ -9982,14 +10028,14 @@ HTML,
         ];
         yield [
             'parent_itil_itemtype' => Ticket::class,
-            'timeline_item_type' => \TicketTask::class,
+            'timeline_item_type' => TicketTask::class,
             'is_private' => true,
             'test_user' => 'post-only',
             'expected' => false,
         ];
         yield [
             'parent_itil_itemtype' => Ticket::class,
-            'timeline_item_type' => \TicketTask::class,
+            'timeline_item_type' => TicketTask::class,
             'is_private' => false,
             'test_user' => 'post-only',
             'expected' => true,
@@ -10012,14 +10058,14 @@ HTML,
         ];
         yield [
             'parent_itil_itemtype' => Ticket::class,
-            'timeline_item_type' => \TicketTask::class,
+            'timeline_item_type' => TicketTask::class,
             'is_private' => false,
             'test_user' => null, // anonymous
             'expected' => true,
         ];
         yield [
             'parent_itil_itemtype' => Ticket::class,
-            'timeline_item_type' => \TicketTask::class,
+            'timeline_item_type' => TicketTask::class,
             'is_private' => true,
             'test_user' => null, // anonymous
             'expected' => false,
@@ -10228,5 +10274,58 @@ HTML,
         ]);
 
         $this->checkActors($ticket, []);
+    }
+
+    /**
+     * Test that sourceof_items_id / sourceitems_id references in followups and tasks are cleaned when a ticket is purged
+     * @return void
+     */
+    public function testSourceOfSourceItemCleanup(): void
+    {
+        $this->login();
+
+        $ticket = $this->createItem(Ticket::class, [
+            'name' => 'Ticket with source item',
+            'content' => 'test',
+            'entities_id' => $this->getTestRootEntity(true),
+        ]);
+
+        $ticket2 = $this->createItem(Ticket::class, [
+            'name' => 'Another ticket',
+            'content' => 'test',
+            'entities_id' => $this->getTestRootEntity(true),
+        ]);
+
+        $followup = $this->createItem(ITILFollowup::class, [
+            'itemtype' => Ticket::class,
+            'items_id' => $ticket2->getID(),
+            'content' => 'Followup content',
+        ]);
+
+        $task = $this->createItem(TicketTask::class, [
+            'tickets_id' => $ticket2->getID(),
+            'content' => 'Task content',
+        ]);
+
+        $followup->update([
+            'id' => $followup->getID(),
+            'sourceof_items_id' => $ticket->getID(),
+            'sourceitems_id' => $ticket->getID(),
+        ]);
+        $task->update([
+            'id' => $task->getID(),
+            'sourceof_items_id' => $ticket->getID(),
+            'sourceitems_id' => $ticket->getID(),
+        ]);
+
+        $this->assertTrue($ticket->delete(['id' => $ticket->getID()], true));
+
+        $this->assertTrue($followup->getFromDB($followup->getID()));
+        $task->getFromDB($task->getID());
+
+        $this->assertEquals(0, $followup->fields['sourceof_items_id']);
+        $this->assertEquals(0, $task->fields['sourceof_items_id']);
+        $this->assertEquals(0, $followup->fields['sourceitems_id']);
+        $this->assertEquals(0, $task->fields['sourceitems_id']);
     }
 }

@@ -836,7 +836,7 @@ final class ITILController extends AbstractController
                 'requested_approver_type' => [
                     'type' => Doc\Schema::TYPE_STRING,
                     'x-field' => 'itemtype_target',
-                    'enum' => [User::getType(), Group::getType()],
+                    'enum' => [User::class, Group::class],
                 ],
                 'requested_approver_id' => [
                     'type' => Doc\Schema::TYPE_INTEGER,
@@ -1450,7 +1450,7 @@ EOT,
     private function getRequiredTimelineItemFields(CommonITILObject $item, Request $request, string $subitem_type): array
     {
         $fields = [
-            'itemtype' => $item::getType(),
+            'itemtype' => $item::class,
             'items_id' => $item->getID(),
         ];
         if ($subitem_type === 'Task' || $subitem_type === 'Validation') {
@@ -1727,7 +1727,7 @@ EOT,
         $schema = $this->getKnownSubitemSchema($item, $subitem_type, $this->getAPIVersion($request));
         return ResourceAccessor::createBySchema($schema, $parameters, [self::class, 'getTimelineItem'], [
             'mapped' => [
-                'itemtype' => $item::getType(),
+                'itemtype' => $item::class,
                 'subitem_type' => $subitem_type,
                 'id' => $item->getID(),
             ],
@@ -1751,7 +1751,7 @@ EOT,
         $schema = $this->getKnownSubitemSchema($item, 'Task', $this->getAPIVersion($request));
         return ResourceAccessor::createBySchema($schema, $parameters, [self::class, 'getTimelineTask'], [
             'mapped' => [
-                'itemtype' => $item::getType(),
+                'itemtype' => $item::class,
                 'subitem_type' => 'Task',
                 'id' => $item->getID(),
             ],
@@ -1777,7 +1777,7 @@ EOT,
         $schema = $this->getKnownSubitemSchema($item, 'Validation', $this->getAPIVersion($request));
         return ResourceAccessor::createBySchema($schema, $parameters, [self::class, 'getTimelineValidation'], [
             'mapped' => [
-                'itemtype' => $item::getType(),
+                'itemtype' => $item::class,
                 'subitem_type' => 'Validation',
                 'id' => $item->getID(),
             ],

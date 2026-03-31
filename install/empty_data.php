@@ -263,7 +263,7 @@ $empty_data_builder = new class {
             'user_deleted_ldap_authorizations' => '0',
             'user_restored_ldap' => '0',
             'auto_create_infocoms' => '0',
-            'use_slave_for_search' => '0',
+            'use_replica_for_search' => '0',
             'proxy_passwd' => '',
             'smtp_passwd' => '',
             // Avoid counters for e2e tests to improve performances.
@@ -858,7 +858,7 @@ $empty_data_builder = new class {
                 'hourmax' => 6,
             ], [
                 'id' => 38,
-                'itemtype' => CleanSoftwareCron::getType(),
+                'itemtype' => CleanSoftwareCron::class,
                 'name' => CleanSoftwareCron::TASK_NAME,
                 'frequency' => MONTH_TIMESTAMP,
                 'param' => 1000,
@@ -906,7 +906,7 @@ $empty_data_builder = new class {
                 'hourmax' => 6,
             ], [
                 'id' => 42,
-                'itemtype' => PendingReasonCron::getType(),
+                'itemtype' => PendingReasonCron::class,
                 'name' => PendingReasonCron::TASK_NAME,
                 'frequency' => 30 * MINUTE_TIMESTAMP,
                 'param' => null,

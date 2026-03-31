@@ -59,20 +59,17 @@ use function Safe\strtotime;
 class Ticket extends CommonITILObject implements DefaultSearchRequestInterface
 {
     // From CommonDBTM
-    public $dohistory                   = true;
-    protected static $forward_entity_to = [TicketValidation::class, TicketCost::class];
+    public bool $dohistory                   = true;
+    protected static array $forward_entity_to = [TicketValidation::class, TicketCost::class];
 
     // From CommonITIL
-    public $userlinkclass               = Ticket_User::class;
-    public $grouplinkclass              = Group_Ticket::class;
-    public $supplierlinkclass           = Supplier_Ticket::class;
+    public string $userlinkclass               = Ticket_User::class;
+    public string $grouplinkclass              = Group_Ticket::class;
+    public string $supplierlinkclass           = Supplier_Ticket::class;
 
-    public static $rightname                   = 'ticket';
+    public static string $rightname                   = 'ticket';
 
-    /**
-     * @var bool
-     */
-    protected $userentity_oncreate      = true;
+    protected bool $userentity_oncreate      = true;
 
     public const MATRIX_FIELD                  = 'priority_matrix';
     public const URGENCY_MASK_FIELD            = 'urgency_mask';
@@ -82,14 +79,12 @@ class Ticket extends CommonITILObject implements DefaultSearchRequestInterface
     // Specific ones
     /**
      * Hardware datas used by getFromDBwithData
-     * @var array
      */
-    public $hardwaredatas = [];
+    public array $hardwaredatas = [];
     /**
      * Is a hardware found in getHardwareData / getFromDBwithData : hardware link to the job
-     * @var int
      */
-    public $computerfound = 0;
+    public int $computerfound = 0;
 
     // Request type
     public const INCIDENT_TYPE = 1;
@@ -779,7 +774,7 @@ class Ticket extends CommonITILObject implements DefaultSearchRequestInterface
                         break;
 
                     default:
-                        if ($item->getType() != self::class) {
+                        if (!$item instanceof self) {
                             // Deprecated, these items should use the Item_Ticket tab instead
                             Toolbox::deprecated("You should register the `Item_Ticket` tab instead of the `Ticket` tab");
                             return (new Item_Ticket())->getTabNameForItem($item, $withtemplate);
@@ -788,8 +783,8 @@ class Ticket extends CommonITILObject implements DefaultSearchRequestInterface
                 }
             }
             // Not for Ticket class
-            if ($item->getType() != self::class) {
-                return self::createTabEntry($title, $nb, $item::getType());
+            if (!$item instanceof self) {
+                return self::createTabEntry($title, $nb, $item::class);
             }
         }
 
@@ -803,7 +798,7 @@ class Ticket extends CommonITILObject implements DefaultSearchRequestInterface
                 $satisfaction->getFromDB($item->getID())
                 && $item->fields['status'] == self::CLOSED
             ) {
-                $ong[3] = TicketSatisfaction::createTabEntry(__('Satisfaction'), 0, static::getType());
+                $ong[3] = TicketSatisfaction::createTabEntry(__('Satisfaction'), 0, static::class);
             }
             if ($item->canView()) {
                 $ong[4] = static::createTabEntry(__('Statistics'), 0, null, 'ti ti-chart-pie');
@@ -899,6 +894,7 @@ class Ticket extends CommonITILObject implements DefaultSearchRequestInterface
 
     public function cleanDBonPurge()
     {
+        global $DB;
 
         // OlaLevel_Ticket does not extends CommonDBConnexity
         $olaLevel_ticket = new OlaLevel_Ticket();
@@ -917,6 +913,28 @@ class Ticket extends CommonITILObject implements DefaultSearchRequestInterface
         // CommonITILTask does not extends CommonDBConnexity
         $tt = new TicketTask();
         $tt->deleteByCriteria(['tickets_id' => $this->fields['id']]);
+
+        // sourceof_items_id / sourceitems_id are not named properly for foreign keys so they cannot be handled by relation.constant.php
+        $DB->update(
+            ITILFollowup::getTable(),
+            ['sourceof_items_id' => 0],
+            ['sourceof_items_id' => $this->fields['id']]
+        );
+        $DB->update(
+            ITILFollowup::getTable(),
+            ['sourceitems_id' => 0],
+            ['sourceitems_id' => $this->fields['id']]
+        );
+        $DB->update(
+            TicketTask::getTable(),
+            ['sourceof_items_id' => 0],
+            ['sourceof_items_id' => $this->fields['id']]
+        );
+        $DB->update(
+            TicketTask::getTable(),
+            ['sourceitems_id' => 0],
+            ['sourceitems_id' => $this->fields['id']]
+        );
 
         $this->deleteChildrenAndRelationsFromDb(
             [
@@ -1687,7 +1705,7 @@ class Ticket extends CommonITILObject implements DefaultSearchRequestInterface
             isset($this->input["_followup"])
             && is_array($this->input["_followup"])
             && isset($this->input["_followup"]['content'])
-            && ((string) $this->input["_followup"]['content'] !== '')
+            && ((string) $this->input["_followup"]['content']) !== ''
         ) {
             $fup  = new ITILFollowup();
             $type = "new";
@@ -2201,7 +2219,7 @@ class Ticket extends CommonITILObject implements DefaultSearchRequestInterface
             }
 
             if (self::canUpdate()) {
-                $actions[self::getType() . MassiveAction::CLASS_ACTION_SEPARATOR . 'resolve_tickets']
+                $actions[static::class . MassiveAction::CLASS_ACTION_SEPARATOR . 'resolve_tickets']
                 = "<i class='ti ti-check'></i>"
                 . __s("Resolve selected tickets");
             }
@@ -2267,18 +2285,6 @@ class Ticket extends CommonITILObject implements DefaultSearchRequestInterface
                     'confirm'   => __('Confirm the merge? This ticket will be deleted!'),
                 ]);
                 echo "</td></tr></table>";
-                return true;
-
-            case 'link_to_problem':
-                Toolbox::deprecated('Ticket "link_to_problem" massive action is deprecated. Use CommonITILObject_CommonITILObject "add" massive action.');
-                Problem::dropdown([
-                    'name'      => 'problems_id',
-                    'condition' => Problem::getOpenCriteria(),
-                ]);
-                echo '<br><br>';
-                echo Html::submit(_x('button', 'Link'), [
-                    'name'      => 'link',
-                ]);
                 return true;
 
             case 'resolve_tickets':
@@ -2409,66 +2415,20 @@ JAVASCRIPT;
                 Ticket::merge($input['_mergeticket'], $ids, $status, $mergeparams);
                 foreach ($status as $id => $status_code) {
                     if ($status_code == 0) {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_OK);
                     } elseif ($status_code == 2) {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_NORIGHT);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_NORIGHT);
                         $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION));
                     } else {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                         $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION));
                     }
                 }
-                return;
-
-            case 'link_to_problem':
-                Toolbox::deprecated('Ticket "link_to_problem" massive action is deprecated. Use CommonITILObject_CommonITILObject "add" massive action.');
-                // Skip if not tickets
-                if ($item::getType() !== Ticket::getType()) {
-                    $ma->addMessage($item->getErrorMessage(ERROR_COMPAT));
-                    return;
-                }
-
-                // Skip if missing update rights on problems
-                if (!Problem::canUpdate()) {
-                    $ma->addMessage($item->getErrorMessage(ERROR_RIGHT));
-                    return;
-                }
-
-                // Check input
-                $input = $ma->getInput();
-                if (!isset($input['problems_id'])) {
-                    $ma->addMessage(__s("Missing input: no Problem selected"));
-                    return;
-                }
-
-                $problem = new Problem();
-                if (!$problem->getFromDB($input['problems_id'])) {
-                    $ma->addMessage(__s("Selected Problem can't be loaded"));
-                    return;
-                }
-
-                $em = new Problem_Ticket();
-                foreach ($ids as $id) {
-                    // Add new link
-                    $res = $em->add([
-                        'problems_id' => $input['problems_id'],
-                        'tickets_id'  => $id,
-                    ]);
-
-                    // Check if creation was successful
-                    if ($res) {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
-                    } else {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
-                        $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION));
-                    }
-                }
-
                 return;
 
             case 'resolve_tickets':
                 // Skip if not tickets
-                if ($item::getType() !== self::getType()) {
+                if ($item::class !== static::class) {
                     $ma->addMessage($item->getErrorMessage(ERROR_COMPAT));
                     return;
                 }
@@ -2496,7 +2456,7 @@ JAVASCRIPT;
                 foreach ($ids as $id) {
                     // Try to load ticket
                     if (!$ticket->getFromDB($id)) {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                         $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION));
                     }
 
@@ -2506,12 +2466,12 @@ JAVASCRIPT;
                         CommonITILObject::CLOSED,
                     ];
                     if (in_array($ticket->fields['status'], $invalid_status)) {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                         $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION));
                     }
 
                     // Add reference to ticket in input
-                    $input['itemtype'] = self::getType();
+                    $input['itemtype'] = static::class;
                     $input['items_id'] = $id;
 
                     // Insert new solution
@@ -2519,9 +2479,9 @@ JAVASCRIPT;
 
                     // Check if creation was successful
                     if ($res) {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_OK);
                     } else {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                         $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION));
                     }
                 }
@@ -2529,7 +2489,7 @@ JAVASCRIPT;
 
             case 'add_contract':
                 // Skip if wrong itemtype
-                if ($item::getType() !== self::getType()) {
+                if ($item::class !== static::class) {
                     $ma->addMessage($item->getErrorMessage(ERROR_COMPAT));
                     return;
                 }
@@ -2557,7 +2517,7 @@ JAVASCRIPT;
 
                     // Link already exist, skip
                     if (count($links)) {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_OK);
                         continue;
                     }
 
@@ -2569,9 +2529,9 @@ JAVASCRIPT;
 
                     // Check if creation was successful
                     if ($res) {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_OK);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_OK);
                     } else {
-                        $ma->itemDone($item->getType(), $id, MassiveAction::ACTION_KO);
+                        $ma->itemDone($item::class, $id, MassiveAction::ACTION_KO);
                         $ma->addMessage($item->getErrorMessage(ERROR_ON_ACTION));
                     }
                 }
@@ -4543,7 +4503,7 @@ JAVASCRIPT;
                         $row['values'][] = implode('<br>', $requesters);
 
                         $associated_elements = [];
-                        if (!empty($job->hardwaredatas)) {
+                        if ($job->hardwaredatas !== []) {
                             foreach ($job->hardwaredatas as $hardwaredatas) {
                                 if ($hardwaredatas->canView()) {
                                     $associated_elements[] = htmlescape($hardwaredatas->getTypeName()) . " - " . "<span class='b'>" . $hardwaredatas->getLink() . "</span>";
@@ -4941,7 +4901,7 @@ JAVASCRIPT;
             echo "</td>";
 
             echo "<td>";
-            if (!empty($job->hardwaredatas)) {
+            if ($job->hardwaredatas !== []) {
                 foreach ($job->hardwaredatas as $hardwaredatas) {
                     if ($hardwaredatas->canView()) {
                         echo htmlescape($hardwaredatas->getTypeName()) . " - ";
@@ -6338,7 +6298,7 @@ JAVASCRIPT;
 
             default:
                 $restrict['glpi_items_tickets.items_id'] = $item->getID();
-                $restrict['glpi_items_tickets.itemtype'] = $item->getType();
+                $restrict['glpi_items_tickets.itemtype'] = $item::class;
                 // you can only see your tickets
                 if (!Session::haveRight(self::$rightname, self::READALL)) {
                     $or = [

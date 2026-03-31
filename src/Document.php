@@ -70,14 +70,13 @@ class Document extends CommonDBTM implements TreeBrowseInterface
     use ParentStatus;
 
     // From CommonDBTM
-    public $dohistory                   = true;
+    public bool $dohistory                   = true;
 
-    protected static $forward_entity_to = ['Document_Item'];
+    protected static array $forward_entity_to = ['Document_Item'];
 
-    public static $rightname                   = 'document';
-    /** @var string */
-    public static $tag_prefix                  = '#';
-    protected $usenotepad               = true;
+    public static string $rightname                   = 'document';
+    public static string $tag_prefix                  = '#';
+    protected bool $usenotepad               = true;
 
 
     public static function getTypeName($nb = 0)
@@ -405,20 +404,6 @@ class Document extends CommonDBTM implements TreeBrowseInterface
     }
 
     /**
-     * Send a document to navigator
-     *
-     * @return void
-     *
-     * @deprecated 11.0.0
-     */
-    public function send()
-    {
-        Toolbox::deprecated();
-
-        $this->getAsResponse()->send();
-    }
-
-    /**
      * Get download link for a document
      *
      * @param CommonDBTM|null   $linked_item    Item linked to the document, to check access right
@@ -430,12 +415,7 @@ class Document extends CommonDBTM implements TreeBrowseInterface
         global $CFG_GLPI, $DB;
 
         $link_params = '';
-        if (is_string($linked_item)) {
-            // Old behaviour.
-            Toolbox::deprecated('Passing additionnal URL parameters in Document::getDownloadLink() is deprecated.', true, '11.0');
-            $linked_item = null;
-            $link_params = $linked_item;
-        } elseif ($linked_item !== null && !($linked_item instanceof CommonDBTM)) {
+        if ($linked_item !== null && !($linked_item instanceof CommonDBTM)) {
             throw new InvalidArgumentException();
         } elseif ($linked_item !== null) {
             $link_params = sprintf('&itemtype=%s&items_id=%s', $linked_item::class, $linked_item->getID());
@@ -499,6 +479,21 @@ class Document extends CommonDBTM implements TreeBrowseInterface
         $out .= "$open<span class='fw-bold'>" . $fileout . "</span>$close";
 
         return $out;
+    }
+
+    public function getDownloadUrl(?CommonDBTM $linked_item = null): string
+    {
+        $params = [
+            'docid' => $this->fields['id'],
+        ];
+
+        if ($linked_item) {
+            $params['itemtype'] = $linked_item::class;
+            $params['items_id'] = $linked_item->getID();
+        }
+
+        $params = http_build_query($params);
+        return Html::getPrefixedUrl("/front/document.send.php?$params");
     }
 
     /**
@@ -997,12 +992,34 @@ class Document extends CommonDBTM implements TreeBrowseInterface
             ],
         ];
 
+        $tab[] = [
+            'id'                 => '73',
+            'table'              => static::getTable(),
+            'field'              => 'filesize',
+            'name'               => __('Size'),
+            'massiveaction'      => false,
+            'datatype'           => 'specific',
+        ];
+
         // add objectlock search options
         $tab = array_merge($tab, ObjectLock::rawSearchOptionsToAdd(get_class($this)));
 
         $tab = array_merge($tab, Notepad::rawSearchOptionsToAdd());
 
         return $tab;
+    }
+
+    public static function getSpecificValueToDisplay($field, $values, array $options = [])
+    {
+
+        if (!is_array($values)) {
+            $values = [$field => $values];
+        }
+
+        if ($field == 'filesize' && $values[$field] !== null) {
+            return htmlescape(Toolbox::getSize($values[$field]));
+        }
+        return parent::getSpecificValueToDisplay($field, $values, $options);
     }
 
     /**
@@ -1053,6 +1070,7 @@ class Document extends CommonDBTM implements TreeBrowseInterface
         }
 
         $fullpath = GLPI_UPLOAD_DIR . "/" . $filename;
+        $filesize = filesize($fullpath);
         $filename = str_replace($prefix, '', $filename);
 
         if (!is_dir(GLPI_UPLOAD_DIR)) {
@@ -1148,6 +1166,8 @@ class Document extends CommonDBTM implements TreeBrowseInterface
         $input['filepath'] = $new_path;
         // Checksum
         $input['sha1sum']  = $sha1sum;
+        // Size
+        $input['filesize'] = $filesize;
         return true;
     }
 
@@ -1173,6 +1193,7 @@ class Document extends CommonDBTM implements TreeBrowseInterface
         }
 
         $fullpath = GLPI_TMP_DIR . "/" . $filename;
+        $filesize = filesize($fullpath);
         $filename = str_replace($prefix, '', $filename);
         if (!is_dir(GLPI_TMP_DIR)) {
             Session::addMessageAfterRedirect(__s("Temporary directory doesn't exist"), false, ERROR);
@@ -1257,6 +1278,8 @@ class Document extends CommonDBTM implements TreeBrowseInterface
         $input['filepath'] = $new_path;
         // Checksum
         $input['sha1sum']  = $sha1sum;
+        // Size
+        $input['filesize'] = $filesize;
         return true;
     }
 

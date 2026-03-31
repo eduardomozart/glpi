@@ -59,19 +59,19 @@ class Dropdown
      * List of standard itemtypes options
      * @var array|null
      */
-    private static $standard_itemtypes_options = null;
+    private static ?array $standard_itemtypes_options = null;
 
     /**
      * List of devices itemtypes options
      * @var array|null
      */
-    private static $devices_itemtypes_options = null;
+    private static ?array $devices_itemtypes_options = null;
 
     /**
      * List of devices itemtypes options grouped by category
      * @var array|null
      */
-    private static $devices_itemtypes_options_grouped = null;
+    private static ?array $devices_itemtypes_options_grouped = null;
 
     /**
      * Print out an HTML "<select>" for a dropdown with preselected value
@@ -571,7 +571,8 @@ class Dropdown
         if ($id) {
             $SELECTNAME    = new QueryExpression("'' AS " . $DB->quoteName('transname'));
             $JOIN          = [];
-            if ($translate && Session::haveTranslations(getItemTypeForTable($table), 'name')) {
+            $transitemtype = getItemTypeForTable($table);
+            if ($translate && $transitemtype && Session::haveTranslations($transitemtype, 'name')) {
                 $SELECTNAME = 'namet.value AS transname';
                 $JOIN = [
                     'LEFT JOIN' => [
@@ -683,6 +684,7 @@ class Dropdown
 
         if (
             $translate
+            && $itemtype
             && Session::haveTranslations($itemtype, 'comment')
         ) {
             $criteria['SELECT'][] = 'comment_translations.value AS translated_comment';
@@ -1405,9 +1407,6 @@ HTML;
                 __('External authentications') => [
                     'SsoVariable' => null,
                 ],
-                __('Power management') => [
-                    'Plug' => null,
-                ],
                 __('Appliances') => [
                     'ApplianceType' => null,
                     'ApplianceEnvironment' => null,
@@ -1474,7 +1473,7 @@ HTML;
      **/
     public static function showItemTypeMenu(string $title, array $optgroup, string $value = '', array $options = []): void
     {
-        Toolbox::deprecated(version: '11.1.0');
+        Toolbox::deprecated(version: '12.0.0');
         $params = [
             'on_change'             => "var _value = this.options[this.selectedIndex].value; if (_value != 0) {window.location.href=_value;}",
             'width'                 => '300px',
@@ -3554,7 +3553,7 @@ HTML;
                     ];
                     break;
 
-                case KnowbaseItem::getType():
+                case KnowbaseItem::class:
                     $criteria = [
                         'SELECT' => array_merge(["$table.*"], $addselect),
                         'DISTINCT'        => true,
@@ -3598,7 +3597,7 @@ HTML;
                     }
                     break;
 
-                case Project::getType():
+                case Project::class:
                     $visibility = Project::getVisibilityCriteria();
                     if (count($visibility['LEFT JOIN'])) {
                         $ljoin = array_merge($ljoin, $visibility['LEFT JOIN']);
@@ -3727,7 +3726,7 @@ HTML;
                                         $data[$key]
                                     );
                                 }
-                                if (((string) $withoutput !== '') && ($withoutput != '&nbsp;')) {
+                                if (((string) $withoutput) !== '' && ($withoutput != '&nbsp;')) {
                                     $outputval = sprintf(__('%1$s - %2$s'), $outputval, $withoutput);
                                 }
                             }
@@ -3835,7 +3834,7 @@ HTML;
             $where["$table.is_template"] = 0;
         }
 
-        if (isset($post['searchText']) && ((string) $post['searchText'] !== '')) {
+        if (isset($post['searchText']) && ((string) $post['searchText']) !== '') {
             $search = Search::makeTextSearchValue($post['searchText']);
             $where['OR'] = [
                 "$table.name"        => ['LIKE', $search],
@@ -4032,7 +4031,7 @@ HTML;
             $where[] = State::getDisplayConditionForAssistance();
         }
 
-        if (isset($_POST['searchText']) && ((string) $post['searchText'] !== '')) {
+        if (isset($_POST['searchText']) && ((string) $post['searchText']) !== '') {
             $search = ['LIKE', Search::makeTextSearchValue($post['searchText'])];
             $orwhere = $item->isField('name') ? [
                 'name'   => $search,
@@ -4256,6 +4255,7 @@ HTML;
 
                         if (!isset($all_devices[$itemtype])) {
                             $all_devices[$itemtype] = [
+                                //TRANS: Always a plural form: My computers, My monitors
                                 'text' => sprintf(__('My %s'), $item->getTypeName(Session::getPluralNumber())),
                                 'children' => [],
                                 'itemtype' => $itemtype,
@@ -5009,7 +5009,7 @@ HTML;
                     'title'             => sprintf(__('%1$s - %2$s'), $text, $user['name']),
                     'itemtype'          => "User",
                     'items_id'          => $ID,
-                    'use_notification'  => (string) ($user['default_email'] ?? "") !== '' ? 1 : 0,
+                    'use_notification'  => ((string) ($user['default_email'] ?? "")) !== '' ? 1 : 0,
                     'default_email'     => $user['default_email'],
                     'alternative_email' => '',
                 ];
@@ -5083,7 +5083,7 @@ HTML;
                         $children['items_id']          = $children['id'];
                         $children['id']                = "Supplier_" . $children['id'];
                         $children['itemtype']          = "Supplier";
-                        $children['use_notification']  = (string) ($supplier_obj->fields['email'] ?? '') !== '' ? 1 : 0;
+                        $children['use_notification']  = ((string) $supplier_obj->fields['email']) !== '' ? 1 : 0;
                         $children['default_email']     = $supplier_obj->fields['email'];
                         $children['alternative_email'] = '';
                     }

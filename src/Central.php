@@ -71,7 +71,7 @@ class Central extends CommonGLPI
     public function getTabNameForItem(CommonGLPI $item, $withtemplate = 0)
     {
 
-        if ($item->getType() == self::class) {
+        if ($item instanceof self) {
             $tabs = [
                 1 => self::createTabEntry(__('Personal View'), 0, null, User::getIcon()),
                 2 => self::createTabEntry(__('Group View'), 0, null, Group::getIcon()),
@@ -340,7 +340,7 @@ class Central extends CommonGLPI
                 'itemtype'  => Project::class,
                 'widget'    => 'central_list',
                 'params'    => $card_params + [
-                    'itemtype'      => User::getType(),
+                    'itemtype'      => User::class,
                     '_idor_token'  => $idor,
                 ],
             ];
@@ -351,7 +351,7 @@ class Central extends CommonGLPI
                 'itemtype'  => ProjectTask::class,
                 'widget'    => 'central_list',
                 'params'    => $card_params + [
-                    'itemtype'      => User::getType(),
+                    'itemtype'      => User::class,
                     '_idor_token'  => $idor,
                 ],
             ];
@@ -502,7 +502,7 @@ class Central extends CommonGLPI
                 'itemtype'  => Project::class,
                 'widget'    => 'central_list',
                 'params'    => [
-                    'itemtype'    => Group::getType(),
+                    'itemtype'    => Group::class,
                     '_idor_token' => $idor,
                 ],
             ];
@@ -513,7 +513,7 @@ class Central extends CommonGLPI
                 'itemtype'  => ProjectTask::class,
                 'widget'    => 'central_list',
                 'params'    => [
-                    'itemtype'    => Group::getType(),
+                    'itemtype'    => Group::class,
                     '_idor_token' => $idor,
                 ],
             ];
@@ -657,7 +657,7 @@ class Central extends CommonGLPI
             }
         }
 
-        if ($DB->isSlave() && !$DB->first_connection) {
+        if ($DB->isReplica() && !$DB->first_connection) {
             $messages['warnings'][] = __s('SQL replica: read only');
         }
 
