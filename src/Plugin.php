@@ -588,12 +588,6 @@ class Plugin extends CommonDBTM
                 && file_exists($locales_dir . $CFG_GLPI["languages"][$trytoload][1])
             ) {
                 $mofile = $locales_dir . $CFG_GLPI["languages"][$trytoload][1];
-            } elseif (
-                !empty($CFG_GLPI["language"])
-                && array_key_exists($CFG_GLPI["language"], $CFG_GLPI["languages"])
-                && file_exists($locales_dir . $CFG_GLPI["languages"][$CFG_GLPI["language"]][1])
-            ) {
-                $mofile = $locales_dir . $CFG_GLPI["languages"][$CFG_GLPI["language"]][1];
             } elseif (file_exists($locales_dir . "en_GB.mo")) {
                 $mofile = $locales_dir . "en_GB.mo";
             }
