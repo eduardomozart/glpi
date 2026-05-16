@@ -366,7 +366,12 @@ class Session
      */
     public static function addToNavigateListItems($itemtype, $ID)
     {
-        $_SESSION['glpilistitems'][$itemtype][] = $ID;
+        if (!isset($_SESSION['glpilistitems'][$itemtype])) {
+            $_SESSION['glpilistitems'][$itemtype] = [];
+        }
+        if (!in_array($ID, $_SESSION['glpilistitems'][$itemtype])) {
+            $_SESSION['glpilistitems'][$itemtype][] = $ID;
+        }
     }
 
 
@@ -380,9 +385,7 @@ class Session
      */
     public static function initNavigateListItems($itemtype, $title = "", $url = null)
     {
-        if (Request::createFromGlobals()->isXmlHttpRequest() && $url === null) {
-            return;
-        }
+        $is_ajax = Request::createFromGlobals()->isXmlHttpRequest();
 
         if (empty($title)) {
             $title = __('List');
@@ -390,7 +393,7 @@ class Session
         if ($url === null) {
             $url = '';
 
-            if (!isset($_SERVER['REQUEST_URI']) || (strpos($_SERVER['REQUEST_URI'], "tabs") > 0)) {
+            if (!isset($_SERVER['REQUEST_URI']) || $is_ajax || (strpos($_SERVER['REQUEST_URI'], "tabs") > 0)) {
                 $url = Html::getRefererUrl();
             } else {
                 $url = $_SERVER['REQUEST_URI'];
