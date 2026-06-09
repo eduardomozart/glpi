@@ -211,16 +211,14 @@ abstract class Device extends InventoryAsset
      *
      * Looks up vendor/product information in the PCI database using either a combined
      * `pciid` field (colon-separated, e.g. "8086:1234") or separate `vendorid`/`productid`
-     * fields on the controller object, then sets `manufacturers_id` and the given
-     * designation fields on `$val`.
+     * fields on the controller object, then sets `manufacturers_id` and `designation` on `$val`.
      *
-     * @param stdClass $val               Asset value object to update
-     * @param stdClass $controller        Controller object containing PCI identifiers
-     * @param string[] $designation_fields Fields on $val to update with the PCI product name (default: ['designation'])
+     * @param stdClass $val        Asset value object to update
+     * @param stdClass $controller Controller object containing PCI identifiers
      *
      * @return bool True if any field was updated
      */
-    protected function applyPciInfoFromController(stdClass $val, stdClass $controller, array $designation_fields = ['designation']): bool
+    protected function applyPciInfoFromController(stdClass $val, stdClass $controller): bool
     {
         $pcivendor = new PCIVendor();
         $updated = false;
@@ -232,9 +230,7 @@ abstract class Device extends InventoryAsset
                 $updated = true;
             }
             if (!empty($exploded[0]) && isset($exploded[1]) && ($pci_product = $pcivendor->getProductName($exploded[0], $exploded[1]))) {
-                foreach ($designation_fields as $field) {
-                    $val->$field = $pci_product;
-                }
+                $val->designation = $pci_product;
                 $updated = true;
             }
         } elseif (property_exists($controller, 'vendorid')) {
@@ -244,9 +240,7 @@ abstract class Device extends InventoryAsset
             }
             if (property_exists($controller, 'productid')) {
                 if ($pci_product = $pcivendor->getProductName($controller->vendorid, $controller->productid)) {
-                    foreach ($designation_fields as $field) {
-                        $val->$field = $pci_product;
-                    }
+                    $val->designation = $pci_product;
                     $updated = true;
                 }
             }

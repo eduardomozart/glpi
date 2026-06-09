@@ -91,7 +91,9 @@ class GraphicCard extends Device
                     }
 
                     if ($found_controller) {
-                        $this->applyPciInfoFromController($val, $found_controller, ['designation', 'devicegraphiccardmodels_id']);
+                        if ($this->applyPciInfoFromController($val, $found_controller)) {
+                            $val->devicegraphiccardmodels_id = $val->designation;
+                        }
                     }
                 }
             } else {
