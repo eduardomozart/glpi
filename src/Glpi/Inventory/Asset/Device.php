@@ -37,6 +37,7 @@ namespace Glpi\Inventory\Asset;
 
 use Glpi\Inventory\Conf;
 use Item_Devices;
+use PCIVendor;
 use stdClass;
 
 use function Safe\strtotime;
@@ -203,6 +204,55 @@ abstract class Device extends InventoryAsset
                 }
             }
         }
+    }
+
+    /**
+     * Apply manufacturer and product name from a PCI controller to an asset value.
+     *
+     * Looks up vendor/product information in the PCI database using either a combined
+     * `pciid` field (colon-separated, e.g. "8086:1234") or separate `vendorid`/`productid`
+     * fields on the controller object, then sets `manufacturers_id` and the given
+     * designation fields on `$val`.
+     *
+     * @param stdClass $val               Asset value object to update
+     * @param stdClass $controller        Controller object containing PCI identifiers
+     * @param string[] $designation_fields Fields on $val to update with the PCI product name (default: ['designation'])
+     *
+     * @return bool True if any field was updated
+     */
+    protected function applyPciInfoFromController(stdClass $val, stdClass $controller, array $designation_fields = ['designation']): bool
+    {
+        $pcivendor = new PCIVendor();
+        $updated = false;
+
+        if (property_exists($controller, 'pciid')) {
+            $exploded = explode(":", $controller->pciid);
+            if ($pci_manufacturer = $pcivendor->getManufacturer($exploded[0])) {
+                $val->manufacturers_id = $pci_manufacturer;
+                $updated = true;
+            }
+            if (isset($exploded[1]) && ($pci_product = $pcivendor->getProductName($exploded[0], $exploded[1]))) {
+                foreach ($designation_fields as $field) {
+                    $val->$field = $pci_product;
+                }
+                $updated = true;
+            }
+        } elseif (property_exists($controller, 'vendorid')) {
+            if ($pci_manufacturer = $pcivendor->getManufacturer($controller->vendorid)) {
+                $val->manufacturers_id = $pci_manufacturer;
+                $updated = true;
+            }
+            if (property_exists($controller, 'productid')) {
+                if ($pci_product = $pcivendor->getProductName($controller->vendorid, $controller->productid)) {
+                    foreach ($designation_fields as $field) {
+                        $val->$field = $pci_product;
+                    }
+                    $updated = true;
+                }
+            }
+        }
+
+        return $updated;
     }
 
     /**

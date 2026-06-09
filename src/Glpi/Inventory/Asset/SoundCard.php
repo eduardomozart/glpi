@@ -41,11 +41,13 @@ use Item_DeviceSoundCard;
 class SoundCard extends Device
 {
     protected $ignored = ['controllers' => null];
+    protected $extra_data = ['controllers' => null];
 
     public function prepare(): array
     {
         $mapping = [
             'name'          => 'designation',
+            'caption'       => 'designation',
             'manufacturer'  => 'manufacturers_id',
             'description'   => 'comment',
         ];
@@ -57,6 +59,21 @@ class SoundCard extends Device
             }
             $val->is_dynamic = 1;
             $this->ignored['controllers'][$val->name] = $val->name;
+
+            if (isset($this->extra_data['controllers'])) {
+                foreach ($this->extra_data['controllers'] as $controller) {
+                    $match_type = property_exists($controller, 'type') && $controller->type === $val->name;
+                    $match_name = property_exists($controller, 'name') && $controller->name === $val->name;
+
+                    if ($match_type || $match_name) {
+                        if (property_exists($controller, 'name')) {
+                            $this->ignored['controllers'][$controller->name] = $controller->name;
+                        }
+                        $this->applyPciInfoFromController($val, $controller);
+                        break;
+                    }
+                }
+            }
         }
         return $this->data;
     }
