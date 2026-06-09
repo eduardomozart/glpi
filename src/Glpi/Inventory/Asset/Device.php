@@ -227,11 +227,11 @@ abstract class Device extends InventoryAsset
 
         if (property_exists($controller, 'pciid')) {
             $exploded = explode(":", $controller->pciid);
-            if ($pci_manufacturer = $pcivendor->getManufacturer($exploded[0])) {
+            if (!empty($exploded[0]) && ($pci_manufacturer = $pcivendor->getManufacturer($exploded[0]))) {
                 $val->manufacturers_id = $pci_manufacturer;
                 $updated = true;
             }
-            if (isset($exploded[1]) && ($pci_product = $pcivendor->getProductName($exploded[0], $exploded[1]))) {
+            if (!empty($exploded[0]) && isset($exploded[1]) && ($pci_product = $pcivendor->getProductName($exploded[0], $exploded[1]))) {
                 foreach ($designation_fields as $field) {
                     $val->$field = $pci_product;
                 }
