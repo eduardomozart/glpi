@@ -696,36 +696,23 @@ class Software extends CommonDBTM implements TreeBrowseInterface, AssignableItem
      **/
     public static function dropdownLicenseToInstall($myname, $entity_restrict)
     {
-        global $CFG_GLPI, $DB;
+        global $CFG_GLPI;
 
-        $iterator = $DB->request([
-            'SELECT'          => [
-                'glpi_softwares.id',
-                'glpi_softwares.name',
-            ],
-            'DISTINCT'        => true,
-            'FROM'            => 'glpi_softwares',
-            'INNER JOIN'      => [
-                'glpi_softwarelicenses' => [
-                    'ON' => [
-                        'glpi_softwarelicenses' => 'softwares_id',
-                        'glpi_softwares'        => 'id',
-                    ],
-                ],
-            ],
-            'WHERE'           => [
-                'glpi_softwares.is_deleted'    => 0,
-                'glpi_softwares.is_template'  => 0,
-            ] + getEntitiesRestrictCriteria('glpi_softwarelicenses', 'entities_id', $entity_restrict, true),
-            'ORDERBY'         => 'glpi_softwares.name',
+        // Use Dropdown::show with a condition to filter software with licenses
+        // This enables automatic comments/tooltips like dropdownSoftwareToInstall
+        $where = [
+            'glpi_softwares.id' => new QuerySubQuery([
+                'SELECT' => 'softwares_id',
+                'DISTINCT' => true,
+                'FROM' => 'glpi_softwarelicenses',
+                'WHERE' => getEntitiesRestrictCriteria('glpi_softwarelicenses', 'entities_id', $entity_restrict, true)
+            ])
+        ];
+
+        $rand = Dropdown::show('Software', [
+            'condition' => ['WHERE' => $where],
+            'display_emptychoice' => true
         ]);
-
-        $values = [];
-        foreach ($iterator as $data) {
-            $softwares_id          = $data["id"];
-            $values[$softwares_id] = $data["name"];
-        }
-        $rand = Dropdown::showFromArray('softwares_id', $values, ['display_emptychoice' => true]);
 
         $paramsselsoft = ['softwares_id'    => '__VALUE__',
             'entity_restrict' => $entity_restrict,
